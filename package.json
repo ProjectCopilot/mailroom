@@ -1,0 +1,23 @@
+{
+  "name": "copilot-core-services",
+  "version": "0.0.1",
+  "description": "Project Copilot core backend services.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProjectCopilot/core-services.git"
+  },
+  "keywords": [
+    "Project",
+    "Copilot"
+  ],
+  "author": "Gautam Mittal",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ProjectCopilot/core-services/issues"
+  },
+  "homepage": "https://github.com/ProjectCopilot/core-services#readme"
+}

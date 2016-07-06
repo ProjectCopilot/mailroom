@@ -1,0 +1,2 @@
+# core-services
+Copilot backend.

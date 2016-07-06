@@ -19,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/ProjectCopilot/core-services/issues"
   },
-  "homepage": "https://github.com/ProjectCopilot/core-services#readme"
+  "homepage": "https://github.com/ProjectCopilot/core-services#readme",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0"
+  }
 }

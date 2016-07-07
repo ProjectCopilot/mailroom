@@ -22,6 +22,7 @@
   "homepage": "https://github.com/ProjectCopilot/core-services#readme",
   "dependencies": {
     "body-parser": "^1.15.2",
+    "colors": "^1.1.2",
     "express": "^4.14.0"
   }
 }

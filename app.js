@@ -19,7 +19,7 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
   next();
 });
 var hash = new hashid(process.env.HASH_SALT);
-var db = new loki('refs/main.json'); // intiialize datastore
+var db = new loki(__dirname+'/refs/main.json'); // intiialize datastore
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
@@ -52,13 +52,13 @@ app.post('/api/addUserRequest', function (req, res) {
     situation: 'String'
   }
 
-  console.log(req.body);
   var checkParams = validateRequestParameters(schema, req.body);
 
   // process entry
   if (checkParams.valid === true) {
-    var requests = db.addCollection("requests").addCollection("pending");
+    var requests = db.addCollection("pending_requests");
     requests.insert(req.body);
+    db.saveDatabase();
     res.status(200);
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);

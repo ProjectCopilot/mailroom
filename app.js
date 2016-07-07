@@ -2,15 +2,18 @@
 // Copyright 2016 Project Copilot
 
 var port = 3000;
+var app = require('express')();
 var bodyParser = require('body-parser');
 var colors = require('colors');
-var express = require('express');
+var dotenv = require('dotenv');
 var gun = require('gun');
-var app = express();
+var hashid = require('hashids');
 
-// Set up bodyParser and database
+/* SET UP */
+dotenv.load(); // import environment variables from .env file
 app.use(bodyParser.json({extended:true}));
 app.use(bodyParser.urlencoded({extended:true}));
+var hash = new hashid(process.env.HASH_SALT);
 var db = gun();
 
 app.get('/', function (req, res) {

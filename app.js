@@ -43,7 +43,7 @@ app.get('/', function (req, res) {
 */
 
 app.post('/api/addUserRequest', function (req, res) {
-  // validate entry fields
+  // specify post body schema
   var schema = {
     name: 'String',
     age: 10,
@@ -53,6 +53,7 @@ app.post('/api/addUserRequest', function (req, res) {
     situation: 'String'
   }
 
+  // validate the request body based on the specified schema
   var checkParams = validateRequestParameters(schema, req.body);
 
   // process entry

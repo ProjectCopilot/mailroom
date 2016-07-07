@@ -5,7 +5,13 @@ var port = 3000;
 var bodyParser = require('body-parser');
 var colors = require('colors');
 var express = require('express');
+var gun = require('gun');
 var app = express();
+
+// Set up bodyParser and database
+app.use(bodyParser.json({extended:true}));
+app.use(bodyParser.urlencoded({extended:true}));
+var db = gun();
 
 app.get('/', function (req, res) {
   res.send('Hello World!');

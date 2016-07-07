@@ -1,2 +1,2 @@
-# core-services
+# Project Copilot Core Services
 Copilot backend.

@@ -52,11 +52,13 @@ app.post('/api/addUserRequest', function (req, res) {
     situation: 'String'
   }
 
-  // process entry
-  if (valid == true) {
+  var checkParams = validateRequestParameters(schema, req.body);
 
+  // process entry
+  if (checkParams.valid === true) {
     res.status(200);
   } else { // otherwise return error
+    console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
     res.status(500);
   }
 
@@ -66,25 +68,26 @@ app.post('/api/addUserRequest', function (req, res) {
 // given a body schema and the actual request body, return whether request body is valid or not
 function validateRequestParameters(schema, body) {
   var valid = true;
-
-
+  var reason = "None";
   for (var field in schema) {
-    if (field == "age" && isNaN(parseInt(req.body[field], 10))) {
-      valid = false;
-    } else if (field == "situation" && req.body[field].length == 0) {
-      valid = false;
-    } else if (field == "name" && req.body[field].length == 0) {
-      valid = false;
-    } else if (field == "gender" && req.body[field].length == 0) {
-      valid = false;
-    } else if (field == "contact" && req.body[field].length == 0) {
-      valid = false;
-    } else if (field == "contactMethod" && req.body[field].length == 0) {
-      valid = false;
+    if (!(field in body)) {
+      valid == false;
+      reason = "Missing parameters";
+      break;
+    } else {
+      if (typeof(schema[field]) == typeof(body[field])) {
+        valid = false;
+        reason = "Invalid parameter type.";
+        break;
+      } else if (typeof(schema[field]) == "string" && body[field].length == 0) {
+        valid = false;
+        reason = "Cannot pass empty string as parameter value.";
+        break;
+      }
     }
   }
 
-  return valid;
+  return {"valid": valid, "reason":reason};
 }
 
 app.listen(process.env.PORT, function () {

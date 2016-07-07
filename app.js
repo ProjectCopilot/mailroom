@@ -19,7 +19,8 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
   next();
 });
 var hash = new hashid(process.env.HASH_SALT);
-var db = new loki(__dirname+'/refs/main.json'); // intiialize datastore
+var db = new loki(__dirname+'/main.json'); // intiialize datastore
+var pending_requests = db.addCollection("pending_requests"); // pending requests
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
@@ -56,8 +57,7 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    var requests = db.addCollection("pending_requests");
-    requests.insert(req.body);
+    pending_requests.insert(req.body);
     db.saveDatabase();
     res.status(200);
   } else { // otherwise return error
@@ -67,7 +67,11 @@ app.post('/api/addUserRequest', function (req, res) {
 
 });
 
-app.post('/api/')
+app.get('/api/readDatabase', function(req, res) {
+  db.loadDatabase({}, function() {
+    res.send(db.getCollection('pending_requests').data);
+  });
+});
 
 
 /* HELPER FUNCTIONS */

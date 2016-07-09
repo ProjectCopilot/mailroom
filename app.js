@@ -58,12 +58,10 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    pending_requests.insert(req.body);
-    db.saveDatabase();
-    res.status(200);
+    res.status(200).end();
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
-    res.status(500);
+    res.status(500).end();
   }
 
 });

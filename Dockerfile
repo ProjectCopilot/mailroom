@@ -10,6 +10,6 @@ RUN npm install -g n
 RUN sudo n stable
 
 ADD /copilot-core /copilot-core
-RN cd /copilot-core && npm install
+RUN cd /copilot-core && npm install
 
 CMD ["/usr/bin/node", "app.js"] 

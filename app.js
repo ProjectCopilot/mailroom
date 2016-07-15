@@ -129,5 +129,5 @@ function validateRequestParameters(schema, body) {
 }
 
 app.listen(process.env.PORT, process.env.HOSTNAME, function () {
-  console.log(('Copilot Core Services running at ').blue + ('localhost:'+process.env.PORT).magenta);
+  console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
 });

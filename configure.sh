@@ -5,13 +5,13 @@ BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONFIG=$BASEDIR/.env
 
 echo "What hostname do you want to run the app on?"
-read HOST >$(tty)
+read HOST
 echo "What port do you want to run the listener on?"
-read PORT >$(tty)
+read PORT
 echo "What is the hash length?"
-read HASH_LENGTH >$(tty)
+read HASH_LENGTH
 echo "What is the hash salt?"
-read HASH_SALT >$(tty)
+read HASH_SALT
 
 cat <<EOF > $CONFIG
 HOSTNAME=$HOST

@@ -6,7 +6,7 @@ var bodyParser = require('body-parser');
 var colors = require('colors');
 var dotenv = require('dotenv');
 var hashid = require('hashids', process.env.HASH_LENGTH);
-var loki = require('lokijs');
+var r = require('rethinkdb');
 
 /* SET UP */
 dotenv.load(); // import environment variables from .env file

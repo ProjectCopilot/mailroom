@@ -26,9 +26,13 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
     connection = conn;
 
     // Set up the various database tables
-    r.db('test').tableCreate('requests').run(connection, function(err, result) {
-      if (err) throw err;
-      console.log(JSON.stringify(result, null, 2));
+    r.tableCreate('requests').run(connection, function(e, result) {
+      if (e) {
+        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
+      } else {
+        console.log(JSON.stringify(result, null, 2));
+      }
+
     });
 })
 
@@ -74,9 +78,9 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    r.table('authors').insert([req.body]).run(connection, function (e, r) {
+    r.table('requests').insert([req.body]).run(connection, function (e, r) {
       if (e) throw e;
-      console.log((JSON.stringify(r.generated_keys, null, 2)).green);
+      console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
       res.status(200).end();
     });
 

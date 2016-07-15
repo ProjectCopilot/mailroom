@@ -4,12 +4,11 @@
 var app = require('express')();
 var bodyParser = require('body-parser');
 var colors = require('colors');
-var dotenv = require('dotenv');
+var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
 var loki = require('lokijs');
 
 /* SET UP */
-dotenv.load(); // import environment variables from .env file
 app.use(bodyParser.json({extended:true}));
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(function(req, res, next) { // enable CORS and assume JSON return structure

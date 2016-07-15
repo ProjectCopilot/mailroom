@@ -6,7 +6,7 @@ var bodyParser = require('body-parser');
 var colors = require('colors');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
-var loki = require('lokijs');
+var r = require('rethinkdb');
 
 /* SET UP */
 app.use(bodyParser.json({extended:true}));
@@ -18,8 +18,26 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
   next();
 });
 var hash = new hashid(process.env.HASH_SALT);
-var db = new loki(__dirname+'/main.json'); // intiialize datastore
-var pending_requests = db.addCollection("pending_requests"); // pending requests
+
+var connection = null;
+r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
+    if (err) throw err;
+    connection = conn;
+
+    // Set up the various database tables
+    r.tableCreate('requests').run(connection, function(e, result) {
+      if (e) {
+        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
+      } else {
+        console.log(JSON.stringify(result, null, 2));
+      }
+
+    });
+})
+
+
+
+
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
@@ -44,9 +62,11 @@ app.get('/', function (req, res) {
 app.post('/api/addUserRequest', function (req, res) {
   // specify post body schema
   var schema = {
+    referral: 'String',
     name: 'String',
     age: 10,
     gender: 'String',
+    school: 'String',
     contactMethod: 'String',
     contact: 'String',
     situation: 'String'
@@ -57,7 +77,13 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    res.status(200).end();
+    r.table('requests').insert([req.body]).run(connection, function (e, r) {
+      if (e) throw e;
+      console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
+      res.status(200).end();
+    });
+
+
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
     res.status(500).end();
@@ -65,11 +91,6 @@ app.post('/api/addUserRequest', function (req, res) {
 
 });
 
-app.get('/api/readDatabase', function(req, res) {
-  db.loadDatabase({}, function() {
-    res.send(db.getCollection('pending_requests').data);
-  });
-});
 
 
 /* HELPER FUNCTIONS */
@@ -107,5 +128,5 @@ function validateRequestParameters(schema, body) {
 }
 
 app.listen(process.env.PORT, process.env.HOSTNAME, function () {
-  console.log(('Copilot Core Services running at ').blue + ('localhost:'+process.env.PORT).magenta);
+  console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
 });

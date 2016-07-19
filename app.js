@@ -38,27 +38,12 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
 
 
 
-
-app.get('/', function (req, res) {
-  res.send('Hello World!');
-});
-
-
 /* CORE API ENDPOINTS */
 
 /*
   POST /api/request -- takes input from HTML form in
-  the user-client and adds it to a database (currently mongodb)
-  {
-    name: '',
-    age: '',
-    gender: '',
-    contactMethod: '',
-    contact: '',
-    situation: ''
-  }
+  the user-client and adds it to a database (currently RethinkDB)
 */
-
 app.post('/api/addUserRequest', function (req, res) {
   // specify post body schema
   var schema = {
@@ -77,6 +62,9 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
+    var pendingRequest = req.body;
+    pendingRequest["time_submitted"] = new Date();
+    pendingRequest["helped"] = false;
     r.table('requests').insert([req.body]).run(connection, function (e, r) {
       if (e) throw e;
       console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
@@ -89,6 +77,15 @@ app.post('/api/addUserRequest', function (req, res) {
     res.status(500).end();
   }
 
+});
+
+
+/*
+  GET /api/getNewRequests -- using the prioritize function, return the most necessary
+*/
+app.get("/api/getRequests/:number", function (req, res) {
+    // get the number of desired requests
+    
 });
 
 
@@ -127,6 +124,7 @@ function validateRequestParameters(schema, body) {
   return {"valid": valid, "reason":reason};
 }
 
-app.listen(process.env.PORT, process.env.HOSTNAME, function () {
+a
+pp.listen(process.env.PORT, process.env.HOSTNAME, function () {
   console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
 });

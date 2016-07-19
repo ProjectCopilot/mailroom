@@ -4,8 +4,10 @@
 var app = require('express')();
 var bodyParser = require('body-parser');
 var colors = require('colors');
+var communicate = require('copilot-communications');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
+var prioritize = require('copilot-prioritize');
 var r = require('rethinkdb');
 
 /* SET UP */
@@ -23,7 +25,7 @@ var connection = null;
 r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
     if (err) throw err;
     connection = conn;
-
+    
     // Set up the various database tables
     r.tableCreate('requests').run(connection, function(e, result) {
       if (e) {
@@ -34,7 +36,6 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
 
     });
 })
-
 
 
 
@@ -85,7 +86,17 @@ app.post('/api/addUserRequest', function (req, res) {
 */
 app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
-    
+    var numRequests = req.params.number;
+
+    r.table('requests').run(connection, function(err, cursor) {
+      if (err) throw err;
+
+      cursor.toArray(function(err, result) {
+          if (err) throw err;
+          res.send(result);
+      });
+    });
+
 });
 
 
@@ -124,7 +135,7 @@ function validateRequestParameters(schema, body) {
   return {"valid": valid, "reason":reason};
 }
 
-a
-pp.listen(process.env.PORT, process.env.HOSTNAME, function () {
+
+app.listen(process.env.PORT, process.env.HOSTNAME, function () {
   console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
 });

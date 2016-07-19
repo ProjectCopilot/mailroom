@@ -11,5 +11,10 @@
     "copilot"
   ],
   "author": "Gautam Mittal <gautam@mittal.net>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^2.0.0",
+    "sendgrid": "^3.0.8",
+    "twilio": "^2.9.1"
+  }
 }

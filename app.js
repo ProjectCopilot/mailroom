@@ -88,7 +88,7 @@ app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
     var numRequests = req.params.number;
 
-    r.table('requests').run(connection, function(err, cursor) {
+    r.table('requests').filter({"helped": false}).run(connection, function(err, cursor) {
       if (err) throw err;
 
       cursor.toArray(function(err, result) {

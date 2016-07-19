@@ -22,9 +22,15 @@ exports.send = function(type, contact, subject, body) {
     });
   } else if (type.toLowerCase() == "sms") {
     sms.sms.messages.create({
-
+      to: contact,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      body: body
     }, function (e, m) {
-      
+      if (!e) {
+        console.log("Successfully sent SMS with SID ".green, (message.sid).magenta);
+      } else {
+        console.log("Error sending SMS message to ".red+(contact).blue);
+      }
     });
   }
 }

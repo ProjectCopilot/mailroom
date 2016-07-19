@@ -72,7 +72,6 @@ app.post('/api/addUserRequest', function (req, res) {
       res.status(200).end();
     });
 
-
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
     res.status(500).end();
@@ -83,6 +82,7 @@ app.post('/api/addUserRequest', function (req, res) {
 
 /*
   GET /api/getNewRequests -- using the prioritize function, return the most urgent inquiries
+  No schema necessary.
 */
 app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests

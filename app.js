@@ -82,7 +82,7 @@ app.post('/api/addUserRequest', function (req, res) {
 
 
 /*
-  GET /api/getNewRequests -- using the prioritize function, return the most necessary
+  GET /api/getNewRequests -- using the prioritize function, return the most urgent inquiries
 */
 app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests

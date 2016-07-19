@@ -106,12 +106,13 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
-
+  console.log(req.body);
 });
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', function (req, res) {
-
+  // for now just log what they text back
+  console.log(req.body.From,":", req.body.Body);
 });
 
 

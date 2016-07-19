@@ -101,6 +101,20 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
+
+/* COMMUNICATION WEBHOOKS */
+
+// Incoming email (SendGrid) webhook
+app.post('/communication/incoming/email', function(req, res) {
+
+});
+
+// Incoming SMS (Twilio) webhook
+app.post('/communication/incoming/sms', function (req, res) {
+
+});
+
+
 /* HELPER FUNCTIONS */
 
 // given a body schema and the actual request body, return whether request body is valid or not and reason

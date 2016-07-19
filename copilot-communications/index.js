@@ -11,15 +11,21 @@ var exports = module.exports = {};
 
 exports.send = function(type, contact, subject, body) {
   if (type.toLowerCase() == "email") {
-    email.send({
-      to:       contact,
-      from:     process.env.SENDGRID_EMAIL,
-      fromname: 'Project Copilot',
-      subject:  subject,
-      text:     body,
-    }, function(err, json) {
-      if (err) { return console.error(err); }
+
+    fs.readFile(__dirname+'/../templates/message.html', 'utf-8', function (err, data) {
+        var emailBody = data.replace(/{HEADER-MESSAGE}/g, subject).replace(/{MESSAGE-BODY}/g, body);
+
+        email.send({
+          to:       contact,
+          from:     process.env.SENDGRID_EMAIL,
+          fromname: 'Project Copilot',
+          subject:  subject,
+          html:     emailBody,
+        }, function(err, json) {
+          if (err) { return console.error(err); }
+        });
     });
+
   } else if (type.toLowerCase() == "sms") {
     sms.sms.messages.create({
       to: contact,

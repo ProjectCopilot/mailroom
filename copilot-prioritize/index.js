@@ -4,8 +4,12 @@
   * Used to measure urgency of certain requests for volunteers to handle sooner than later
 */
 
-module.exports = {
-  prioritize: function(l) {
-    return l;
-  }
-};
+var exports = module.exports = {};
+
+exports.sort = function(l) {
+  var sorted = l.slice();
+  sorted = sorted.sort(function(a, b) {
+    return new Date(a.time_submitted).getTime() - new Date(b.time_submitted).getTime();
+  });
+  return sorted;
+}

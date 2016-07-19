@@ -4,10 +4,10 @@
 var app = require('express')();
 var bodyParser = require('body-parser');
 var colors = require('colors');
-var communicate = require('copilot-communications');
+var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
-var prioritize = require('copilot-prioritize');
+var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 var r = require('rethinkdb');
 
 /* SET UP */
@@ -25,7 +25,7 @@ var connection = null;
 r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
     if (err) throw err;
     connection = conn;
-    
+
     // Set up the various database tables
     r.tableCreate('requests').run(connection, function(e, result) {
       if (e) {
@@ -93,7 +93,7 @@ app.get("/api/getRequests/:number", function (req, res) {
 
       cursor.toArray(function(err, result) {
           if (err) throw err;
-          res.send(result);
+          res.send(prioritize.sort(result).slice(0, numRequests));
       });
     });
 

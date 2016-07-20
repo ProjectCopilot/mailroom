@@ -109,7 +109,10 @@ app.get("/api/getRequests/:number", function (req, res) {
 app.post('/communication/incoming/email', function(req, res) {
   var form = new multiparty.Form();
   form.parse(req, function(err, fields, files) {
-    console.log(fields.text);
+    console.log(fields.envelope);
+    console.log(fields.text[0]);
+    console.log(fields.attachments[0]);
+
     res.status(200).end();
   });
 });

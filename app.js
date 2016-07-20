@@ -7,6 +7,7 @@ var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
+var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 var r = require('rethinkdb');
 
@@ -106,13 +107,18 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
-  console.log(req);
+  var form = new multiparty.Form();
+  form.parse(req, function(err, fields, files) {
+    console.log(fields.text);
+    res.status(200).end();
+  });
 });
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', function (req, res) {
   // for now just log what they text back
   console.log(req.body.From,":", req.body.Body);
+  res.status(200).end();
 });
 
 

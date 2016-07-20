@@ -106,7 +106,7 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
-  console.log(req.body);
+  console.log(req);
 });
 
 // Incoming SMS (Twilio) webhook

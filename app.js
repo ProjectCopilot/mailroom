@@ -10,6 +10,7 @@ var hashid = require('hashids', process.env.HASH_LENGTH);
 var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 var r = require('rethinkdb');
+require('shelljs/global');
 
 /* SET UP */
 app.use(bodyParser.json({extended:true}));
@@ -22,6 +23,7 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
 });
 var hash = new hashid(process.env.HASH_SALT);
 
+// Connect to database
 var connection = null;
 r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
     if (err) throw err;
@@ -32,14 +34,12 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
       if (e) {
         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
       }
-
     });
 
     r.tableCreate('messages').run(connection, function(e, result) {
       if (e) {
         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
       }
-
     });
 })
 
@@ -114,18 +114,17 @@ app.get("/api/getRequests/:number", function (req, res) {
 app.post('/communication/incoming/email', function(req, res) {
   var form = new multiparty.Form();
   form.parse(req, function(err, fields, files) {
-
-    console.log(fields["attachment-info"]);
-    console.log(files);
-
     var fromEmail = JSON.parse(fields.envelope).from;
     var rawEmailBody = fields.text[0];
     var fromHeader = fields.from[0];
     var body = stripEmail(rawEmailBody, fromHeader);
 
     var attachments = [];
-    for (var i = 0; i < fields.attachments[0].length; i++) {
-      attachments.push(fields["attachment"+(i+1).toString()]);
+    for (var key in files) {
+      var fileInfo = files[key][0]
+      var path = fileInfo.path;
+      var url = JSON.parse(exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "")).link;
+      attachments.push(url);
     }
 
     var message = {
@@ -157,6 +156,8 @@ app.post('/communication/incoming/sms', function (req, res) {
 
   res.status(200).end();
 });
+
+
 
 
 /* HELPER FUNCTIONS */
@@ -202,4 +203,5 @@ function stripEmail(emailString, fromHeader) {
 
 app.listen(process.env.PORT, process.env.HOSTNAME, function () {
   console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
+  console.log('Node '+exec('node --version', {silent:true}).stdout);
 });

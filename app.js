@@ -31,8 +31,13 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
     r.tableCreate('requests').run(connection, function(e, result) {
       if (e) {
         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-      } else {
-        console.log(JSON.stringify(result, null, 2));
+      }
+
+    });
+
+    r.tableCreate('messages').run(connection, function(e, result) {
+      if (e) {
+        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
       }
 
     });

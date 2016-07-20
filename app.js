@@ -4,8 +4,10 @@
 var app = require('express')();
 var bodyParser = require('body-parser');
 var colors = require('colors');
+var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
+var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 var r = require('rethinkdb');
 
 /* SET UP */
@@ -37,28 +39,12 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
 
 
 
-
-
-app.get('/', function (req, res) {
-  res.send('Hello World!');
-});
-
-
 /* CORE API ENDPOINTS */
 
 /*
   POST /api/request -- takes input from HTML form in
-  the user-client and adds it to a database (currently mongodb)
-  {
-    name: '',
-    age: '',
-    gender: '',
-    contactMethod: '',
-    contact: '',
-    situation: ''
-  }
+  the user-client and adds it to a database (currently RethinkDB)
 */
-
 app.post('/api/addUserRequest', function (req, res) {
   // specify post body schema
   var schema = {
@@ -77,12 +63,14 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
+    var pendingRequest = req.body;
+    pendingRequest["time_submitted"] = new Date();
+    pendingRequest["helped"] = false;
     r.table('requests').insert([req.body]).run(connection, function (e, r) {
       if (e) throw e;
       console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
       res.status(200).end();
     });
-
 
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
@@ -91,6 +79,41 @@ app.post('/api/addUserRequest', function (req, res) {
 
 });
 
+
+/*
+  GET /api/getNewRequests -- using the prioritize function, return the most urgent inquiries
+  No schema necessary.
+*/
+app.get("/api/getRequests/:number", function (req, res) {
+    // get the number of desired requests
+    var numRequests = req.params.number;
+
+    r.table('requests').filter({"helped": false}).run(connection, function(err, cursor) {
+      if (err) throw err;
+
+      cursor.toArray(function(err, result) {
+          if (err) throw err;
+          res.send(prioritize.sort(result).slice(0, numRequests));
+      });
+    });
+
+});
+
+
+
+
+/* COMMUNICATION WEBHOOKS */
+
+// Incoming email (SendGrid) webhook
+app.post('/communication/incoming/email', function(req, res) {
+  console.log(req.body);
+});
+
+// Incoming SMS (Twilio) webhook
+app.post('/communication/incoming/sms', function (req, res) {
+  // for now just log what they text back
+  console.log(req.body.From,":", req.body.Body);
+});
 
 
 /* HELPER FUNCTIONS */
@@ -126,6 +149,7 @@ function validateRequestParameters(schema, body) {
 
   return {"valid": valid, "reason":reason};
 }
+
 
 app.listen(process.env.PORT, process.env.HOSTNAME, function () {
   console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);

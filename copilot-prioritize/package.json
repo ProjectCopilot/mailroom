@@ -1,0 +1,15 @@
+{
+  "name": "copilot-prioritize",
+  "version": "0.0.1",
+  "description": "Copilot prioritization module.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "copilot",
+    "prioritize"
+  ],
+  "author": "Gautam Mittal",
+  "license": "MIT"
+}

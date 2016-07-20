@@ -109,9 +109,27 @@ app.get("/api/getRequests/:number", function (req, res) {
 app.post('/communication/incoming/email', function(req, res) {
   var form = new multiparty.Form();
   form.parse(req, function(err, fields, files) {
-    console.log(fields.envelope);
-    console.log(fields.text[0]);
-    console.log(fields.attachments[0]);
+
+    console.log(fields["attachment-info"]);
+    console.log(files);
+
+    var fromEmail = JSON.parse(fields.envelope).from;
+    var rawEmailBody = fields.text[0];
+    var fromHeader = fields.from[0];
+    var body = stripEmail(rawEmailBody, fromHeader);
+
+    var attachments = [];
+    for (var i = 0; i < fields.attachments[0].length; i++) {
+      attachments.push(fields["attachment"+(i+1).toString()]);
+    }
+
+    var message = {
+      "from": fromEmail,
+      "body": body,
+      "attachments": attachments
+    };
+
+    console.log(message);
 
     res.status(200).end();
   });
@@ -119,8 +137,19 @@ app.post('/communication/incoming/email', function(req, res) {
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', function (req, res) {
-  // for now just log what they text back
-  console.log(req.body.From,":", req.body.Body);
+  var attachments = [];
+  for (var i = 0; i < parseInt(req.body.NumMedia, 10); i++) {
+    attachments.push(req.body["MediaUrl"+i.toString()]);
+  }
+
+  var message = {
+    "from": req.body.From,
+    "body": req.body.Body,
+    "attachments": attachments
+  }
+
+  console.log(message);
+
   res.status(200).end();
 });
 
@@ -157,6 +186,12 @@ function validateRequestParameters(schema, body) {
   }
 
   return {"valid": valid, "reason":reason};
+}
+
+
+// Removes reply message headers from emails
+function stripEmail(emailString, fromHeader) {
+  return emailString.substr(0, emailString.indexOf(fromHeader));
 }
 
 

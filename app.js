@@ -107,6 +107,20 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
+app.get("/api/getMessages/:caseId", function (req, res) {
+    r.table(req.params.caseId).run(connection, function(err, cursor) {
+      if (err) throw err;
+
+      cursor.toArray(function(err, result) {
+          if (err) throw err;
+          res.send(result);
+      });
+    });
+
+});
+
+
+
 
 /* COMMUNICATION WEBHOOKS */
 
@@ -133,8 +147,6 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
-    console.log(message);
-
     res.status(200).end();
   });
 });
@@ -146,13 +158,37 @@ app.post('/communication/incoming/sms', function (req, res) {
     attachments.push(req.body["MediaUrl"+i.toString()]);
   }
 
+  var numberPattern = /\d+/g;
+
   var message = {
-    "from": req.body.From,
+    "from": (req.body.From).match(numberPattern).join("").substr(-10),
     "body": req.body.Body,
     "attachments": attachments
   }
 
-  console.log(message);
+
+  // Currently temporary -- will fix in next release (then will copy over to the email webhook)
+  r.table("requests").filter(r.row('contact').eq("1"+message.from).or(r.row('contact').eq(message.from))).run(connection, function (e, cursor) {
+    if (e) throw e;
+    cursor.toArray(function (err, results) {
+      if (err) throw err;
+      console.log(results);
+
+      for (var j = 0; j < results.length; j++) {
+          r.table("messages").indexCreate(results[j].id).run(connection, function (error, result) {
+            if (error) {
+              console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+            }
+
+            console.log("Message pushed with Case ID: ".green + (results[j].id).magenta);
+            r.table("messages").get(results[j].id).insert(message).run(connection);
+
+          });
+      }
+
+
+    })
+  });
 
   res.status(200).end();
 });

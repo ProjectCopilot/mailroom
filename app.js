@@ -110,11 +110,11 @@ app.post('/communication/incoming/email', function(req, res) {
     for (var key in files) {
       var fileInfo = files[key][0];
       var path = fileInfo.path;
-      var uploadOutString = exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "");
-      var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? {"success": false} : JSON.parse(uploadOutString);
+      var uploadOutString = exec(__dirname+'/util/imgur.sh '+ path +' '+ process.env.IMGUR_CLIENT_ID, {silent:true}).stdout.replace(/\/n/g, "").trim();
+      var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? false : uploadOutString;
 
-      if (uploadResponse.success == true) {
-        attachments.push(uploadResponse.link);
+      if (uploadResponse !== false) {
+        attachments.push(uploadResponse);
       }
 
     }

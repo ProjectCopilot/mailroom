@@ -137,8 +137,13 @@ app.post('/communication/incoming/email', function(req, res) {
     for (var key in files) {
       var fileInfo = files[key][0]
       var path = fileInfo.path;
-      var url = JSON.parse(exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "")).link;
-      attachments.push(url);
+      var uploadOutString = exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "");
+      var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? {"success": false} : JSON.parse(uploadOutString);
+
+      if (uploadResponse.success == true) {
+        attachments.push(uploadResponse.link);
+      }
+
     }
 
     var message = {
@@ -147,7 +152,15 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
+    r.table("messages").insert(message).run(connection, function (error, result) {
+      if (error) {
+        console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+      }
+      console.log("Message (email) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
+    });
+
     res.status(200).end();
+
   });
 });
 

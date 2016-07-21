@@ -1,15 +1,11 @@
-FROM ubuntu
+FROM node:6.3.0
 
-RUN apt-get install -y software-properties-common python
-RUN add-apt-repository ppa:chris-lea/node.js
-RUN echo "deb http://us.archive.ubuntu.com/ubuntu/ precise universe" >> /etc/apt/sources.list
-RUN apt-get update
-RUN apt-get install -y nodejs
-#RUN apt-get install -y nodejs=0.6.12~dfsg1-1ubuntu1
-RUN npm install -g n
-RUN sudo n stable
+ADD . /usr/src/app
+WORKDIR /usr/src/app
 
-ADD /copilot-core /copilot-core
-RUN cd /copilot-core && npm install
+RUN npm set progress=false && \
+npm install --global --progress=false && \
+npm install ./copilot-communications --global --progress=false && \
+npm install ./copilot-prioritize --global --progress=false
 
-CMD ["/usr/bin/node", "app.js"] 
+CMD ["node", "app.js"]

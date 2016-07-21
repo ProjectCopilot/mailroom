@@ -6,10 +6,11 @@ var bodyParser = require('body-parser');
 var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
+var firebase = require('firebase');
 var hashid = require('hashids', process.env.HASH_LENGTH);
 var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
-var r = require('rethinkdb');
+
 require('shelljs/global');
 
 /* SET UP */
@@ -21,27 +22,37 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
+
+// setup Firebase
+firebase.initializeApp({
+  serviceAccount: process.env.FIREBASE_KEY_PATH,
+  databaseURL: process.env.FIREBASE_URL
+});
+
+var db = firebase.database().ref("/");
+db.push({"Hello": "world"});
+
 var hash = new hashid(process.env.HASH_SALT);
 
-// Connect to database
-var connection = null;
-r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
-    if (err) throw err;
-    connection = conn;
-
-    // Set up the various database tables
-    r.tableCreate('requests').run(connection, function(e, result) {
-      if (e) {
-        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-      }
-    });
-
-    r.tableCreate('messages').run(connection, function(e, result) {
-      if (e) {
-        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-      }
-    });
-})
+// // Connect to database
+// var connection = null;
+// r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
+//     if (err) throw err;
+//     connection = conn;
+//
+//     // Set up the various database tables
+//     r.tableCreate('requests').run(connection, function(e, result) {
+//       if (e) {
+//         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
+//       }
+//     });
+//
+//     r.tableCreate('messages').run(connection, function(e, result) {
+//       if (e) {
+//         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
+//       }
+//     });
+// })
 
 
 
@@ -72,11 +83,11 @@ app.post('/api/addUserRequest', function (req, res) {
     var pendingRequest = req.body;
     pendingRequest["time_submitted"] = new Date();
     pendingRequest["helped"] = false;
-    r.table('requests').insert([req.body]).run(connection, function (e, r) {
-      if (e) throw e;
-      console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
-      res.status(200).end();
-    });
+    // r.table('requests').insert([req.body]).run(connection, function (e, r) {
+    //   if (e) throw e;
+    //   console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
+    //   res.status(200).end();
+    // });
 
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
@@ -94,30 +105,18 @@ app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
     var numRequests = req.params.number;
 
-    r.table('requests').filter({"helped": false}).run(connection, function(err, cursor) {
-      if (err) throw err;
-
-      cursor.toArray(function(err, result) {
-          if (err) throw err;
-          res.send(prioritize.sort(result).slice(0, numRequests));
-      });
-    });
-
-});
-
-
-
-app.get("/api/getMessages/", function (req, res) {
-    r.table("messages").run(connection, function(err, cursor) {
-      if (err) throw err;
-
-      cursor.toArray(function(err, result) {
-          if (err) throw err;
-          res.send(result);
-      });
-    });
+    // r.table('requests').filter({"helped": false}).run(connection, function(err, cursor) {
+    //   if (err) throw err;
+    //
+    //   cursor.toArray(function(err, result) {
+    //       if (err) throw err;
+    //       res.send(prioritize.sort(result).slice(0, numRequests));
+    //   });
+    // });
 
 });
+
+
 
 
 
@@ -135,7 +134,7 @@ app.post('/communication/incoming/email', function(req, res) {
 
     var attachments = [];
     for (var key in files) {
-      var fileInfo = files[key][0]
+      var fileInfo = files[key][0];
       var path = fileInfo.path;
       var uploadOutString = exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "");
       var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? {"success": false} : JSON.parse(uploadOutString);
@@ -152,12 +151,12 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
-    r.table("messages").insert(message).run(connection, function (error, result) {
-      if (error) {
-        console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
-      }
-      console.log("Message (email) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
-    });
+    // r.table("messages").insert(message).run(connection, function (error, result) {
+    //   if (error) {
+    //     console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+    //   }
+    //   console.log("Message (email) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
+    // });
 
     res.status(200).end();
 
@@ -180,13 +179,13 @@ app.post('/communication/incoming/sms', function (req, res) {
   }
 
 
-  r.table("messages").insert(message).run(connection, function (error, result) {
-    if (error) {
-      console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
-    }
-
-    console.log("Message (SMS) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
-  });
+  // r.table("messages").insert(message).run(connection, function (error, result) {
+  //   if (error) {
+  //     console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+  //   }
+  //
+  //   console.log("Message (SMS) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
+  // });
 
   res.status(200).end();
 });

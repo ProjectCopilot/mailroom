@@ -7,8 +7,10 @@ var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var hashid = require('hashids', process.env.HASH_LENGTH);
+var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 var r = require('rethinkdb');
+require('shelljs/global');
 
 /* SET UP */
 app.use(bodyParser.json({extended:true}));
@@ -21,6 +23,7 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
 });
 var hash = new hashid(process.env.HASH_SALT);
 
+// Connect to database
 var connection = null;
 r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
     if (err) throw err;
@@ -30,10 +33,13 @@ r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT},
     r.tableCreate('requests').run(connection, function(e, result) {
       if (e) {
         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-      } else {
-        console.log(JSON.stringify(result, null, 2));
       }
+    });
 
+    r.tableCreate('messages').run(connection, function(e, result) {
+      if (e) {
+        console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
+      }
     });
 })
 
@@ -101,19 +107,93 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
+app.get("/api/getMessages/:caseId", function (req, res) {
+    r.table(req.params.caseId).run(connection, function(err, cursor) {
+      if (err) throw err;
+
+      cursor.toArray(function(err, result) {
+          if (err) throw err;
+          res.send(result);
+      });
+    });
+
+});
+
+
+
 
 /* COMMUNICATION WEBHOOKS */
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
-  console.log(req.body);
+  var form = new multiparty.Form();
+  form.parse(req, function(err, fields, files) {
+    var fromEmail = JSON.parse(fields.envelope).from;
+    var rawEmailBody = fields.text[0];
+    var fromHeader = fields.from[0];
+    var body = stripEmail(rawEmailBody, fromHeader);
+
+    var attachments = [];
+    for (var key in files) {
+      var fileInfo = files[key][0]
+      var path = fileInfo.path;
+      var url = JSON.parse(exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "")).link;
+      attachments.push(url);
+    }
+
+    var message = {
+      "from": fromEmail,
+      "body": body,
+      "attachments": attachments
+    };
+
+    res.status(200).end();
+  });
 });
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', function (req, res) {
-  // for now just log what they text back
-  console.log(req.body.From,":", req.body.Body);
+  var attachments = [];
+  for (var i = 0; i < parseInt(req.body.NumMedia, 10); i++) {
+    attachments.push(req.body["MediaUrl"+i.toString()]);
+  }
+
+  var numberPattern = /\d+/g;
+
+  var message = {
+    "from": (req.body.From).match(numberPattern).join("").substr(-10),
+    "body": req.body.Body,
+    "attachments": attachments
+  }
+
+
+  // Currently temporary -- will fix in next release (then will copy over to the email webhook)
+  r.table("requests").filter(r.row('contact').eq("1"+message.from).or(r.row('contact').eq(message.from))).run(connection, function (e, cursor) {
+    if (e) throw e;
+    cursor.toArray(function (err, results) {
+      if (err) throw err;
+      console.log(results);
+
+      for (var j = 0; j < results.length; j++) {
+          r.table("messages").indexCreate(results[j].id).run(connection, function (error, result) {
+            if (error) {
+              console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+            }
+
+            console.log("Message pushed with Case ID: ".green + (results[j].id).magenta);
+            r.table("messages").get(results[j].id).insert(message).run(connection);
+
+          });
+      }
+
+
+    })
+  });
+
+  res.status(200).end();
 });
+
+
 
 
 /* HELPER FUNCTIONS */
@@ -151,6 +231,13 @@ function validateRequestParameters(schema, body) {
 }
 
 
+// Removes reply message headers from emails
+function stripEmail(emailString, fromHeader) {
+  return emailString.substr(0, emailString.indexOf(fromHeader));
+}
+
+
 app.listen(process.env.PORT, process.env.HOSTNAME, function () {
   console.log(('Copilot Core Services running at ').blue + (process.env.HOSTNAME+":"+process.env.PORT).magenta);
+  console.log('Node '+exec('node --version', {silent:true}).stdout);
 });

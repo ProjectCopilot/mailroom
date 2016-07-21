@@ -29,29 +29,10 @@ firebase.initializeApp({
   databaseURL: "https://"+process.env.FIREBASE_ID+".firebaseio.com"
 });
 
+// Initialize database
 var db = firebase.database().ref("/");
 
 var hash = new hashid(process.env.HASH_SALT);
-
-// // Connect to database
-// var connection = null;
-// r.connect( {host: process.env.RETHINK_HOSTNAME, port: process.env.RETHINK_PORT}, function(err, conn) {
-//     if (err) throw err;
-//     connection = conn;
-//
-//     // Set up the various database tables
-//     r.tableCreate('requests').run(connection, function(e, result) {
-//       if (e) {
-//         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-//       }
-//     });
-//
-//     r.tableCreate('messages').run(connection, function(e, result) {
-//       if (e) {
-//         console.log("RethinkDB ".cyan + (e.name).red + ": " + (e.msg).red);
-//       }
-//     });
-// })
 
 
 
@@ -82,11 +63,11 @@ app.post('/api/addUserRequest', function (req, res) {
     var pendingRequest = req.body;
     pendingRequest["time_submitted"] = new Date();
     pendingRequest["helped"] = false;
-    // r.table('requests').insert([req.body]).run(connection, function (e, r) {
-    //   if (e) throw e;
-    //   console.log("RethinkDB: ".cyan + (JSON.stringify(r.generated_keys, null, 2)).green);
-    //   res.status(200).end();
-    // });
+
+    db.child("requests").push(req.body, function () {
+      res.status(200).end();
+    });
+
 
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
@@ -104,15 +85,9 @@ app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
     var numRequests = req.params.number;
 
-    // r.table('requests').filter({"helped": false}).run(connection, function(err, cursor) {
-    //   if (err) throw err;
-    //
-    //   cursor.toArray(function(err, result) {
-    //       if (err) throw err;
-    //       res.send(prioritize.sort(result).slice(0, numRequests));
-    //   });
-    // });
-
+    db.child("requests").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
+      res.send(snapshot.val())
+    });
 });
 
 
@@ -120,7 +95,7 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
-/* COMMUNICATION WEBHOOKS */
+/* COMMUNICATION ENDPOINTS/WEBHOOKS */
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
@@ -135,11 +110,11 @@ app.post('/communication/incoming/email', function(req, res) {
     for (var key in files) {
       var fileInfo = files[key][0];
       var path = fileInfo.path;
-      var uploadOutString = exec('curl -F "file=@'+path+'" https://file.io?expires=10y', {silent:true}).stdout.replace(/\/n/g, "");
-      var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? {"success": false} : JSON.parse(uploadOutString);
+      var uploadOutString = exec(__dirname+'/util/imgur.sh '+ path +' '+ process.env.IMGUR_CLIENT_ID, {silent:true}).stdout.replace(/\/n/g, "").trim();
+      var uploadResponse = uploadOutString.indexOf("Error: ENOSPC") > -1 ? false : uploadOutString;
 
-      if (uploadResponse.success == true) {
-        attachments.push(uploadResponse.link);
+      if (uploadResponse !== false) {
+        attachments.push(uploadResponse);
       }
 
     }
@@ -150,12 +125,8 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
-    // r.table("messages").insert(message).run(connection, function (error, result) {
-    //   if (error) {
-    //     console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
-    //   }
-    //   console.log("Message (email) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
-    // });
+    var contactID = hash.encodeHex(Buffer(message.from).toString("hex"));
+    db.child("messages").child(contactID).push(message);
 
     res.status(200).end();
 
@@ -177,19 +148,17 @@ app.post('/communication/incoming/sms', function (req, res) {
     "attachments": attachments
   }
 
-
-  // r.table("messages").insert(message).run(connection, function (error, result) {
-  //   if (error) {
-  //     console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
-  //   }
-  //
-  //   console.log("Message (SMS) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
-  // });
+  var contactID = hash.encodeHex(Buffer(message.from).toString("hex"));
+  db.child("messages").child(contactID).push(message);
 
   res.status(200).end();
 });
 
 
+// Send a message
+app.post('/communication/send', function (req, res) {
+
+});
 
 
 /* HELPER FUNCTIONS */

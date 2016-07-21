@@ -25,9 +25,9 @@
     "colors": "^1.1.2",
     "dotenv": "^2.0.0",
     "express": "^4.14.0",
+    "firebase": "^3.2.0",
     "hashids": "^1.0.2",
     "multiparty": "^4.1.2",
-    "rethinkdb": "^2.3.2",
     "shelljs": "^0.7.0"
   }
 }

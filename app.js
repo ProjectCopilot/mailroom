@@ -26,11 +26,10 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
 // setup Firebase
 firebase.initializeApp({
   serviceAccount: process.env.FIREBASE_KEY_PATH,
-  databaseURL: process.env.FIREBASE_URL
+  databaseURL: "https://"+process.env.FIREBASE_ID+".firebaseio.com"
 });
 
 var db = firebase.database().ref("/");
-db.push({"Hello": "world"});
 
 var hash = new hashid(process.env.HASH_SALT);
 

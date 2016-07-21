@@ -12,6 +12,10 @@ echo "What is the hash length?"
 read HASH_LENGTH
 echo "What is the hash salt?"
 read HASH_SALT
+echo "Firebase JSON key path?"
+read FB_KEY_PATH
+echo "Firebase database URL?"
+read FB_URL
 echo "Twilio account SID?"
 read TWILIO_ACCOUNT_SID
 echo "Twilio auth token?"
@@ -28,6 +32,8 @@ HOSTNAME=$HOST
 PORT=$PORT
 HASH_LENGTH=$HASH_LENGTH
 HASH_SALT=$HASH_SALT
+FIREBASE_KEY_PATH=$FB_KEY_PATH
+FIREBASE_URL=$FB_URL
 TWILIO_ACCOUNT_SID=$TWILIO_ACCOUNT_SID
 TWILIO_AUTH_TOKEN=$TWILIO_AUTH_TOKEN
 TWILIO_PHONE_NUMBER=$TWILIO_PHONE_NUMBER

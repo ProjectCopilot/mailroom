@@ -107,8 +107,8 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
-app.get("/api/getMessages/:caseId", function (req, res) {
-    r.table(req.params.caseId).run(connection, function(err, cursor) {
+app.get("/api/getMessages/", function (req, res) {
+    r.table("messages").run(connection, function(err, cursor) {
       if (err) throw err;
 
       cursor.toArray(function(err, result) {
@@ -167,27 +167,12 @@ app.post('/communication/incoming/sms', function (req, res) {
   }
 
 
-  // Currently temporary -- will fix in next release (then will copy over to the email webhook)
-  r.table("requests").filter(r.row('contact').eq("1"+message.from).or(r.row('contact').eq(message.from))).run(connection, function (e, cursor) {
-    if (e) throw e;
-    cursor.toArray(function (err, results) {
-      if (err) throw err;
-      console.log(results);
+  r.table("messages").insert(message).run(connection, function (error, result) {
+    if (error) {
+      console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
+    }
 
-      for (var j = 0; j < results.length; j++) {
-          r.table("messages").indexCreate(results[j].id).run(connection, function (error, result) {
-            if (error) {
-              console.log("RethinkDB ".cyan + (error.name).red + ": " + (error.msg).red);
-            }
-
-            console.log("Message pushed with Case ID: ".green + (results[j].id).magenta);
-            r.table("messages").get(results[j].id).insert(message).run(connection);
-
-          });
-      }
-
-
-    })
+    console.log("Message (SMS) pushed to Rethink: ".green + ((new Date()).toString()).magenta);
   });
 
   res.status(200).end();

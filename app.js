@@ -95,7 +95,7 @@ app.get("/api/getRequests/:number", function (req, res) {
 
 
 
-/* COMMUNICATION WEBHOOKS */
+/* COMMUNICATION ENDPOINTS/WEBHOOKS */
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', function(req, res) {
@@ -155,6 +155,10 @@ app.post('/communication/incoming/sms', function (req, res) {
 });
 
 
+// Send a message
+app.post('/communication/send', function (req, res) {
+
+});
 
 
 /* HELPER FUNCTIONS */

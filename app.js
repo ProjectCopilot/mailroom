@@ -125,8 +125,7 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
-    var contactID = hash.encodeHex(Buffer(message.from).toString("hex"));
-    db.child("messages").child(contactID).push(message);
+    db.child("messages").child(message.from).push(message);
 
     res.status(200).end();
 
@@ -148,8 +147,7 @@ app.post('/communication/incoming/sms', function (req, res) {
     "attachments": attachments
   }
 
-  var contactID = hash.encodeHex(Buffer(message.from).toString("hex"));
-  db.child("messages").child(contactID).push(message);
+  db.child("messages").child(message.from).push(message);
 
   res.status(200).end();
 });

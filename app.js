@@ -64,7 +64,7 @@ app.post('/api/addUserRequest', function (req, res) {
     pendingRequest["time_submitted"] = new Date();
     pendingRequest["helped"] = false;
 
-    db.child("requests").push(req.body, function () {
+    db.child("cases").push(req.body, function () {
       res.status(200).end();
     });
 
@@ -85,7 +85,7 @@ app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
     var numRequests = req.params.number;
 
-    db.child("requests").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
+    db.child("cases").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
       res.send(snapshot.val())
     });
 });
@@ -104,7 +104,9 @@ app.post('/communication/incoming/email', function(req, res) {
     var fromEmail = JSON.parse(fields.envelope).from;
     var rawEmailBody = fields.text[0];
     var fromHeader = fields.from[0];
-    var body = stripEmail(rawEmailBody, fromHeader);
+
+    var body = rawEmailBody;// stripEmail(rawEmailBody, fromHeader);
+
 
     var attachments = [];
     for (var key in files) {
@@ -125,7 +127,15 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments
     };
 
-    db.child("messages").child(message.from).push(message);
+
+
+    db.child("cases").once("value", function (s) {
+      for (var k in s.val()) {
+        if (s.val()[k]["contact"] == message.from) {
+          db.child("cases").child(k).child("messages").push(message);
+        }
+      }
+    });
 
     res.status(200).end();
 
@@ -147,16 +157,21 @@ app.post('/communication/incoming/sms', function (req, res) {
     "attachments": attachments
   }
 
-  db.child("messages").child(message.from).push(message);
+
+  db.child("cases").once("value", function (s) {
+    for (var k in s.val()) {
+      if (s.val()[k]["contact"].match(numberPattern) !== null) {
+        if (s.val()[k]["contact"].match(numberPattern).join("").substr(-10) == message.from) {
+          db.child("cases").child(k).child("messages").push(message);
+        }
+      }
+    }
+  });
 
   res.status(200).end();
 });
 
 
-// Send a message
-app.post('/communication/send', function (req, res) {
-
-});
 
 
 /* HELPER FUNCTIONS */

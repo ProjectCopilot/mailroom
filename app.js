@@ -7,7 +7,7 @@ var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var firebase = require('firebase');
-var hashid = require('hashids', process.env.HASH_LENGTH);
+var hashid = require('hashids');
 var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 
@@ -32,7 +32,7 @@ firebase.initializeApp({
 // Initialize database
 var db = firebase.database().ref("/");
 
-var hash = new hashid(process.env.HASH_SALT);
+var hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
 
 
 
@@ -61,10 +61,11 @@ app.post('/api/addUserRequest', function (req, res) {
   // process entry
   if (checkParams.valid === true) {
     var pendingRequest = req.body;
-    pendingRequest["time_submitted"] = new Date();
+    pendingRequest["time_submitted"] = new Date().getTime();
     pendingRequest["helped"] = false;
 
-    db.child("cases").push(req.body, function () {
+    var id = hash.encode(pendingRequest.time_submitted);
+    db.child("cases").child(id).set(req.body, function () {
       res.status(200).end();
     });
 
@@ -89,7 +90,6 @@ app.get("/api/getRequests/:number", function (req, res) {
       res.send(snapshot.val())
     });
 });
-
 
 
 
@@ -124,7 +124,8 @@ app.post('/communication/incoming/email', function(req, res) {
     var message = {
       "from": fromEmail,
       "body": body,
-      "attachments": attachments
+      "attachments": attachments,
+      "sender": "user"
     };
 
 
@@ -154,7 +155,8 @@ app.post('/communication/incoming/sms', function (req, res) {
   var message = {
     "from": (req.body.From).match(numberPattern).join("").substr(-10),
     "body": req.body.Body,
-    "attachments": attachments
+    "attachments": attachments,
+    "sender": "user"
   }
 
 

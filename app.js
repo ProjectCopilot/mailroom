@@ -79,21 +79,20 @@ app.post('/api/addUserRequest', function (req, res) {
             hasDuplicateCase = true;
             break;
           }
-
-
-          if (hasDuplicateCase == false) {
-            var pendingRequest = req.body;
-            pendingRequest["time_submitted"] = new Date();
-            pendingRequest["helped"] = false;
-            db.child("cases").push(req.body, function () {
-              res.status(200).end();
-            });
-          } else {
-            res.status(409).end(); // duplicate case found, throw error
-          }
-
-
         }
+
+        if (hasDuplicateCase == false) {
+          var pendingRequest = req.body;
+          pendingRequest["time_submitted"] = new Date();
+          pendingRequest["helped"] = false;
+          db.child("cases").push(req.body, function () {
+            res.status(200).end();
+          });
+        } else {
+
+          res.status(409).end(); // duplicate case found, throw error
+        }
+
       } else {
         var pendingRequest = req.body;
         pendingRequest["time_submitted"] = new Date();

@@ -60,13 +60,49 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    var pendingRequest = req.body;
-    pendingRequest["time_submitted"] = new Date();
-    pendingRequest["helped"] = false;
 
-    db.child("requests").push(req.body, function () {
-      res.status(200).end();
+    var hasDuplicateCase = false;
+
+    // check if a request with the same contact info has not already been submitted
+    db.child("cases").once("value", function (snapshot) {
+      if (snapshot.val() !== null) {
+        for (var k in snapshot.val()) {
+          var numberPattern = /\d+/g;
+
+          if (req.body.contactMethod === "SMS") {
+
+            if ((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10) === (req.body.contact).match(numberPattern).join("").substr(-10)) {
+              hasDuplicateCase = true;
+              break;
+            }
+          } else if (req.body.contactMethod == "Email" && snapshot.val()[k].contact == req.body.contact) {
+            hasDuplicateCase = true;
+            break;
+          }
+        }
+
+        if (hasDuplicateCase === true) {
+          res.status(409).end();
+          return;
+        }
+
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        db.child("cases").push(req.body, function () {
+          res.status(200).end();
+        });
+
+      } else {
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        db.child("cases").push(req.body, function () {
+          res.status(200).end();
+        });
+      }
     });
+
 
 
   } else { // otherwise return error
@@ -85,7 +121,7 @@ app.get("/api/getRequests/:number", function (req, res) {
     // get the number of desired requests
     var numRequests = req.params.number;
 
-    db.child("requests").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
+    db.child("cases").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
       res.send(snapshot.val())
     });
 });
@@ -167,7 +203,7 @@ function validateRequestParameters(schema, body) {
   var reason = "None";
   for (var field in schema) {
     if (!(field in body)) {
-      valid == false;
+      valid = false;
       reason = "Missing parameters.";
       break;
     } else {

@@ -25,7 +25,7 @@ app.use(function(req, res, next) { // enable CORS and assume JSON return structu
 
 // setup Firebase
 firebase.initializeApp({
-  serviceAccount: process.env.FIREBASE_KEY_PATH,
+  serviceAccount: __dirname+'/'+process.env.FIREBASE_KEY_PATH,
   databaseURL: "https://"+process.env.FIREBASE_ID+".firebaseio.com"
 });
 

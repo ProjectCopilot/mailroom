@@ -65,12 +65,11 @@ app.post('/api/addUserRequest', function (req, res) {
 
     // check if a request with the same contact info has not already been submitted
     db.child("cases").once("value", function (snapshot) {
+      if (snapshot.val() !== null) {
         for (var k in snapshot.val()) {
           var numberPattern = /\d+/g;
 
           if (req.body.contactMethod == "SMS") {
-             console.log((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10));
-             console.log((req.body.contact).match(numberPattern).join("").substr(-10));
 
             if ((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10) == (req.body.contact).match(numberPattern).join("").substr(-10)) {
               hasDuplicateCase = true;
@@ -95,6 +94,14 @@ app.post('/api/addUserRequest', function (req, res) {
 
 
         }
+      } else {
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        db.child("cases").push(req.body, function () {
+          res.status(200).end();
+        });
+      }
     });
 
 

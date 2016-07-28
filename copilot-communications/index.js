@@ -25,6 +25,7 @@ exports.send = function(type, contact, body, subject) {
           html:     emailBody,
         }, function(err, json) {
           if (err) { return console.error(err); }
+          console.log("Successfully sent email.".green);
         });
     });
 

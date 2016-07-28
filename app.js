@@ -92,7 +92,24 @@ app.get("/api/getRequests/:number", function (req, res) {
 });
 
 
+/*
+  FIREBASE REAL-TIME HANDLERS
+*/
 
+// If a new message comes from a volunteer, route that to the user
+db.child("cases").on("child_added", function (snap) {
+  for (var k in snap.val()) {
+    for (var m in snap.val()[k].messages) {
+      if (snap.val()[k].messages[m].sender === "volunteer" && snap.val()[k].messages[m].sent === false) {
+        var method = snap.val()[k].contactMethod;
+        var contact = snap.val()[k].contact;
+        var body = snap.val()[k].messages[m].body;
+        var subject = "New Message";
+        communicate.send(method, contact, body, subject);
+      }
+    }
+  }
+});
 
 
 /* COMMUNICATION ENDPOINTS/WEBHOOKS */

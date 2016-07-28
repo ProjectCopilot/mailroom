@@ -7,7 +7,7 @@ var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
 var dotenv = require('dotenv').config({path: __dirname+'/.env'});
 var firebase = require('firebase');
-var hashid = require('hashids', process.env.HASH_LENGTH);
+var hashid = require('hashids');
 var multiparty = require('multiparty');
 var prioritize = require(__dirname+'/copilot-prioritize/index.js');
 
@@ -32,7 +32,7 @@ firebase.initializeApp({
 // Initialize database
 var db = firebase.database().ref("/");
 
-var hash = new hashid(process.env.HASH_SALT);
+var hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
 
 
 
@@ -60,7 +60,6 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-
     var hasDuplicateCase = false;
 
     // check if a request with the same contact info has not already been submitted
@@ -89,7 +88,8 @@ app.post('/api/addUserRequest', function (req, res) {
         var pendingRequest = req.body;
         pendingRequest["time_submitted"] = new Date();
         pendingRequest["helped"] = false;
-        db.child("cases").push(req.body, function () {
+        var id = hash.encode(pendingRequest.time_submitted);
+        db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });
 
@@ -97,7 +97,8 @@ app.post('/api/addUserRequest', function (req, res) {
         var pendingRequest = req.body;
         pendingRequest["time_submitted"] = new Date();
         pendingRequest["helped"] = false;
-        db.child("cases").push(req.body, function () {
+        var id = hash.encode(pendingRequest.time_submitted);
+        db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });
       }
@@ -127,8 +128,24 @@ app.get("/api/getRequests/:number", function (req, res) {
 });
 
 
+/*
+  FIREBASE REAL-TIME HANDLERS
+*/
 
+// If a new message comes from a volunteer, route that to the user
+db.child("cases").on("child_added", function (snap) {
+    for (var m in snap.val().messages) {
+      if (snap.val().messages[m].sender === "volunteer" && snap.val().messages[m].sent === false) {
+        var method = snap.val().contactMethod;
+        var contact = snap.val().contact;
+        var body = snap.val().messages[m].body;
+        var subject = "New Message";
+        communicate.send(method, contact, body, subject);
+        db.child("cases").child(snap.key).child("messages").child(m).child("sent").set(true);
+      }
+    }
 
+});
 
 
 /* COMMUNICATION ENDPOINTS/WEBHOOKS */
@@ -140,7 +157,9 @@ app.post('/communication/incoming/email', function(req, res) {
     var fromEmail = JSON.parse(fields.envelope).from;
     var rawEmailBody = fields.text[0];
     var fromHeader = fields.from[0];
-    var body = stripEmail(rawEmailBody, fromHeader);
+
+    var body = rawEmailBody;// stripEmail(rawEmailBody, fromHeader);
+
 
     var attachments = [];
     for (var key in files) {
@@ -158,10 +177,19 @@ app.post('/communication/incoming/email', function(req, res) {
     var message = {
       "from": fromEmail,
       "body": body,
-      "attachments": attachments
+      "attachments": attachments,
+      "sender": "user"
     };
 
-    db.child("messages").child(message.from).push(message);
+
+
+    db.child("cases").once("value", function (s) {
+      for (var k in s.val()) {
+        if (s.val()[k]["contact"] == message.from) {
+          db.child("cases").child(k).child("messages").push(message);
+        }
+      }
+    });
 
     res.status(200).end();
 
@@ -180,19 +208,25 @@ app.post('/communication/incoming/sms', function (req, res) {
   var message = {
     "from": (req.body.From).match(numberPattern).join("").substr(-10),
     "body": req.body.Body,
-    "attachments": attachments
+    "attachments": attachments,
+    "sender": "user"
   }
 
-  db.child("messages").child(message.from).push(message);
+
+  db.child("cases").once("value", function (s) {
+    for (var k in s.val()) {
+      if (s.val()[k]["contact"].match(numberPattern) !== null) {
+        if (s.val()[k]["contact"].match(numberPattern).join("").substr(-10) == message.from) {
+          db.child("cases").child(k).child("messages").push(message);
+        }
+      }
+    }
+  });
 
   res.status(200).end();
 });
 
 
-// Send a message
-app.post('/communication/send', function (req, res) {
-
-});
 
 
 /* HELPER FUNCTIONS */

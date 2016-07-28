@@ -69,9 +69,9 @@ app.post('/api/addUserRequest', function (req, res) {
         for (var k in snapshot.val()) {
           var numberPattern = /\d+/g;
 
-          if (req.body.contactMethod == "SMS") {
+          if (req.body.contactMethod === "SMS") {
 
-            if ((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10) == (req.body.contact).match(numberPattern).join("").substr(-10)) {
+            if ((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10) === (req.body.contact).match(numberPattern).join("").substr(-10)) {
               hasDuplicateCase = true;
               break;
             }
@@ -81,17 +81,17 @@ app.post('/api/addUserRequest', function (req, res) {
           }
         }
 
-        if (hasDuplicateCase == false) {
-          var pendingRequest = req.body;
-          pendingRequest["time_submitted"] = new Date();
-          pendingRequest["helped"] = false;
-          db.child("cases").push(req.body, function () {
-            res.status(200).end();
-          });
-        } else {
-
-          res.status(409).end(); // duplicate case found, throw error
+        if (hasDuplicateCase === true) {
+          res.status(409).end();
+          return;
         }
+
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        db.child("cases").push(req.body, function () {
+          res.status(200).end();
+        });
 
       } else {
         var pendingRequest = req.body;
@@ -203,7 +203,7 @@ function validateRequestParameters(schema, body) {
   var reason = "None";
   for (var field in schema) {
     if (!(field in body)) {
-      valid == false;
+      valid = false;
       reason = "Missing parameters.";
       break;
     } else {

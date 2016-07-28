@@ -206,23 +206,21 @@ function validateRequestParameters(schema, body) {
       valid = false;
       reason = "Missing parameters.";
       break;
-    } else {
-      if (typeof(schema[field]) == "string" && body[field].length == 0) {
-        valid = false;
-        reason = "Cannot pass empty string as parameter value.";
-        break;
-      } else if (typeof(schema[field]) == "number" && typeof(body[field]) == "string") {
-        if (isNaN(parseInt(body[field], 10))) {
-          valid = false;
-          reason = "Cannot pass NaN value as numreic parameter value."
-          break;
-        }
-        break;
-      } else if (typeof(schema[field]) !== typeof(body[field])) {
-        valid = false;
-        reason = "Invalid parameter type " + typeof(body[field]) + " that should be " + typeof(schema[field]) + ".";
-        break;
-      }
+    }
+    if (typeof(schema[field]) == "string" && body[field].length == 0) {
+      valid = false;
+      reason = "Cannot pass empty string as parameter value.";
+      break;
+    }
+    if (typeof(schema[field]) == "number" && typeof(body[field]) == "string" && isNaN(parseInt(body[field], 10))) {
+      valid = false;
+      reason = "Cannot pass NaN value as numreic parameter value."
+      break;
+    }
+    if (typeof(schema[field]) !== typeof(body[field])) {
+      valid = false;
+      reason = "Invalid parameter type " + typeof(body[field]) + " that should be " + typeof(schema[field]) + ".";
+      break;
     }
   }
 

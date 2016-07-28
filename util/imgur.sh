@@ -19,17 +19,19 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+# Ankit does not like this code but does not care enough to actually make it
+# good. If you're free or interested in bash, please rewrite this so it doesn't
+# seem so hacky. Or write a pretty node module to do it right. (Or even a
+# Python script. Anything but bash for the love of all that's good.)
 
 # Based the work of Bart Nagel <bart@tremby.net>
 # If you have rate limit issues, get your own key at http://api.imgur.com/
 CLIENT_ID=$2
-CLIPBOARD=true
 
 # function to output usage instructions
 function usage {
 	echo "Usage: $(basename "$0") [filenames]
 Upload images to imgur, print their URLs to stdout, and print the delete pages URL to stderr.
-If you're on a Mac or have xsel/xclip, copy the images URLs to the clipboard.
 If you don't especify any filename, they will be read from standard input." >&2
 }
 
@@ -51,43 +53,23 @@ function parse_delete_url_from_response {
 	echo "$1" | sed -E 's/.*"deletehash":"([^"]+)".*/\1/' | sed "s|^|http://imgur.com/delete/|"
 }
 
-# check API key has been entered
-if [ "$CLIENT_ID" = "Your Client ID" ]; then
-	echo "You first need to edit the script and put your API key in the variable near the top." >&2
-	exit 15
-fi
-
 # check arguments
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 	usage
 	exit 0
-elif [[ "$1" == "-x" || "$1" == "--no-clipboard" ]]; then
-	CLIPBOARD=false
-	shift
 fi
-
-# check curl is available
-which curl &>/dev/null || {
-	echo "Couln't find curl, which is required." >&2
-	exit 17
-}
 
 # get list of files either from arguments or standard input
 files_to_upload=""
 
-if [[ $# -gt 0 ]]; then
-	while [[ $# -gt 0 ]]; do
-		if [ -z "$files_to_upload" ]; then
-			files_to_upload="$1"
-		else
-			files_to_upload="$files_to_upload"$'\n'"$1"
-		fi
-		shift
-	done
-else
-	# I know, I know...
-	files_to_upload=$(cat)
-fi
+while [[ $# -gt 0 ]]; do
+	if [ -z "$files_to_upload" ]; then
+		files_to_upload="$1"
+	else
+		files_to_upload="$files_to_upload"$'\n'"$1"
+	fi
+	shift
+done
 
 
 # handle filenames with spaces gracefully
@@ -105,7 +87,6 @@ for file in $files_to_upload; do
 	# this stops the batch operation, which seems the best course of action
 	# since the script has such detailed error levels
 	if [ $? -ne 0 ]; then
-		# echo "Upload failed" >&2
 		exit 2
 	elif [ "$(echo "$response" | grep -c "<error_msg>")" -gt 0 ]; then
 		echo "Error: ENOSPC"
@@ -131,11 +112,3 @@ for file in $files_to_upload; do
 	echo "$url"
 done
 IFS=$ifs_old
-
-# put the URL on the clipboard if we have xsel or xclip
-if [ $CLIPBOARD == true ]; then
-	{ which pbcopy &>/dev/null && echo -n "$list_urls" | pbcopy; } \
-		|| { which xsel &>/dev/null && echo -n "$list_urls" | xsel --input --clipboard; } \
-		|| { which xclip &>/dev/null && echo -n "$list_urls" | xclip -selection clipboard; } \
-		|| echo "Haven't copied to the clipboard: no pbcopy, xsel, or xclip" >&2
-fi

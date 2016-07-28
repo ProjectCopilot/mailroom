@@ -60,14 +60,50 @@ app.post('/api/addUserRequest', function (req, res) {
 
   // process entry
   if (checkParams.valid === true) {
-    var pendingRequest = req.body;
-    pendingRequest["time_submitted"] = new Date().getTime();
-    pendingRequest["helped"] = false;
+    var hasDuplicateCase = false;
 
-    var id = hash.encode(pendingRequest.time_submitted);
-    db.child("cases").child(id).set(req.body, function () {
-      res.status(200).end();
+    // check if a request with the same contact info has not already been submitted
+    db.child("cases").once("value", function (snapshot) {
+      if (snapshot.val() !== null) {
+        for (var k in snapshot.val()) {
+          var numberPattern = /\d+/g;
+
+          if (req.body.contactMethod === "SMS") {
+
+            if ((snapshot.val()[k].contact).match(numberPattern).join("").substr(-10) === (req.body.contact).match(numberPattern).join("").substr(-10)) {
+              hasDuplicateCase = true;
+              break;
+            }
+          } else if (req.body.contactMethod == "Email" && snapshot.val()[k].contact == req.body.contact) {
+            hasDuplicateCase = true;
+            break;
+          }
+        }
+
+        if (hasDuplicateCase === true) {
+          res.status(409).end();
+          return;
+        }
+
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        var id = hash.encode(pendingRequest.time_submitted);
+        db.child("cases").child(id).set(req.body, function () {
+          res.status(200).end();
+        });
+
+      } else {
+        var pendingRequest = req.body;
+        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["helped"] = false;
+        var id = hash.encode(pendingRequest.time_submitted);
+        db.child("cases").child(id).set(req.body, function () {
+          res.status(200).end();
+        });
+      }
     });
+
 
 
   } else { // otherwise return error
@@ -201,26 +237,24 @@ function validateRequestParameters(schema, body) {
   var reason = "None";
   for (var field in schema) {
     if (!(field in body)) {
-      valid == false;
+      valid = false;
       reason = "Missing parameters.";
       break;
-    } else {
-      if (typeof(schema[field]) == "string" && body[field].length == 0) {
-        valid = false;
-        reason = "Cannot pass empty string as parameter value.";
-        break;
-      } else if (typeof(schema[field]) == "number" && typeof(body[field]) == "string") {
-        if (isNaN(parseInt(body[field], 10))) {
-          valid = false;
-          reason = "Cannot pass NaN value as numreic parameter value."
-          break;
-        }
-        break;
-      } else if (typeof(schema[field]) !== typeof(body[field])) {
-        valid = false;
-        reason = "Invalid parameter type " + typeof(body[field]) + " that should be " + typeof(schema[field]) + ".";
-        break;
-      }
+    }
+    if (typeof(schema[field]) == "string" && body[field].length == 0) {
+      valid = false;
+      reason = "Cannot pass empty string as parameter value.";
+      break;
+    }
+    if (typeof(schema[field]) == "number" && typeof(body[field]) == "string" && isNaN(parseInt(body[field], 10))) {
+      valid = false;
+      reason = "Cannot pass NaN value as numreic parameter value."
+      break;
+    }
+    if (typeof(schema[field]) !== typeof(body[field])) {
+      valid = false;
+      reason = "Invalid parameter type " + typeof(body[field]) + " that should be " + typeof(schema[field]) + ".";
+      break;
     }
   }
 

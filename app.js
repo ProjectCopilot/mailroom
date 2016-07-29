@@ -147,7 +147,6 @@ db.child("cases").on("value", function (snap) {
       }
     }
 
-
 });
 
 

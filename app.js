@@ -251,11 +251,6 @@ function validateRequestParameters(schema, body) {
       reason = "Cannot pass NaN value as numreic parameter value."
       break;
     }
-    if (typeof(schema[field]) !== typeof(body[field])) {
-      valid = false;
-      reason = "Invalid parameter type " + typeof(body[field]) + " that should be " + typeof(schema[field]) + ".";
-      break;
-    }
   }
 
   return {"valid": valid, "reason":reason};

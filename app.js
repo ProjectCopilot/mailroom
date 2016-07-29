@@ -47,7 +47,7 @@ app.post('/api/addUserRequest', function (req, res) {
   var schema = {
     referral: 'String',
     name: 'String',
-    age: 10,
+    age: 0,
     gender: 'String',
     school: 'String',
     contactMethod: 'String',

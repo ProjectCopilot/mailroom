@@ -2,6 +2,7 @@
 // Copyright 2016 Project Copilot
 
 var app = require('express')();
+var bandname = require('bandname');
 var bodyParser = require('body-parser');
 var colors = require('colors');
 var communicate = require(__dirname+'/copilot-communications/index.js');
@@ -33,7 +34,6 @@ firebase.initializeApp({
 var db = firebase.database().ref("/");
 
 var hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
-
 
 
 /* CORE API ENDPOINTS */
@@ -86,25 +86,27 @@ app.post('/api/addUserRequest', function (req, res) {
         }
 
         var pendingRequest = req.body;
-        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["display_name"] = bandname();
+        pendingRequest["time_submitted"] = new Date().getTime();
         pendingRequest["helped"] = false;
         var id = hash.encode(pendingRequest.time_submitted);
+        console.log('New case submitted with ID: '.green + (id).magenta);
         db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });
 
       } else {
         var pendingRequest = req.body;
-        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["display_name"] = bandname();
+        pendingRequest["time_submitted"] = new Date().getTime();
         pendingRequest["helped"] = false;
         var id = hash.encode(pendingRequest.time_submitted);
+        console.log('New case submitted with ID: '.green + (id).magenta);
         db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });
       }
     });
-
-
 
   } else { // otherwise return error
     console.log("/api/addUserRequest".cyan + " had bad request for: ".blue + (checkParams.reason).red);
@@ -119,7 +121,7 @@ app.post('/api/addUserRequest', function (req, res) {
   No schema necessary.
 */
 app.get("/api/getRequests/:number", function (req, res) {
-    // get the number of desired requests
+    // get the number of desired cases
     var numRequests = req.params.number;
 
     db.child("cases").orderByChild("time_submitted").limitToFirst(parseInt(numRequests, 10)).once("value", function (snapshot) {
@@ -162,7 +164,6 @@ app.post('/communication/incoming/email', function(req, res) {
 
     var body = rawEmailBody;// stripEmail(rawEmailBody, fromHeader);
 
-
     var attachments = [];
     for (var key in files) {
       var fileInfo = files[key][0];
@@ -182,8 +183,6 @@ app.post('/communication/incoming/email', function(req, res) {
       "attachments": attachments,
       "sender": "user"
     };
-
-
 
     db.child("cases").once("value", function (s) {
       for (var k in s.val()) {

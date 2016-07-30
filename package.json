@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/ProjectCopilot/core-services#readme",
   "dependencies": {
+    "bandname": "^1.0.0",
     "body-parser": "^1.15.2",
     "colors": "^1.1.2",
     "dotenv": "^2.0.0",

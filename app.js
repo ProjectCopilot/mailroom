@@ -36,7 +36,6 @@ var db = firebase.database().ref("/");
 var hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
 
 
-
 /* CORE API ENDPOINTS */
 
 /*
@@ -88,9 +87,11 @@ app.post('/api/addUserRequest', function (req, res) {
 
         var pendingRequest = req.body;
         pendingRequest["display_name"] = bandname();
-        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["time_submitted"] = new Date().getTime();
         pendingRequest["helped"] = false;
         var id = hash.encode(pendingRequest.time_submitted);
+        console.log(pendingRequest.time_submitted);
+        console.log('New case submitted with ID: '.green + (typeof id).magenta);
         db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });
@@ -98,9 +99,10 @@ app.post('/api/addUserRequest', function (req, res) {
       } else {
         var pendingRequest = req.body;
         pendingRequest["display_name"] = bandname();
-        pendingRequest["time_submitted"] = new Date();
+        pendingRequest["time_submitted"] = new Date().getTime();
         pendingRequest["helped"] = false;
         var id = hash.encode(pendingRequest.time_submitted);
+        console.log('New case submitted with ID: '.green + (id).magenta);
         db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });

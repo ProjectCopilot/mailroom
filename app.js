@@ -90,8 +90,7 @@ app.post('/api/addUserRequest', function (req, res) {
         pendingRequest["time_submitted"] = new Date().getTime();
         pendingRequest["helped"] = false;
         var id = hash.encode(pendingRequest.time_submitted);
-        console.log(pendingRequest.time_submitted);
-        console.log('New case submitted with ID: '.green + (typeof id).magenta);
+        console.log('New case submitted with ID: '.green + (id).magenta);
         db.child("cases").child(id).set(req.body, function () {
           res.status(200).end();
         });

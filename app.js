@@ -227,7 +227,10 @@ app.post('/communication/incoming/sms', function (req, res) {
   res.status(200).end();
 });
 
-
+// Our humble uptime check
+app.get('/up', function (req, res) {
+    res.status(200).end();
+});
 
 
 /* HELPER FUNCTIONS */

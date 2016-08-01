@@ -193,6 +193,7 @@ app.post('/communication/incoming/email', function (req, res) {
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', function (req, res) {
+  res.setHeader('Content-Type', 'application/xml');
   const attachments = [];
   for (let i = 0; i < parseInt(req.body.NumMedia, 10); i++) {
     attachments.push(req.body['MediaUrl' + i.toString()]);
@@ -219,7 +220,7 @@ app.post('/communication/incoming/sms', function (req, res) {
     }
   });
 
-  res.status(200).end();
+  res.send('<?xml version="1.0" encoding="UTF-8" ?><Response></Response>');
 });
 
 // Our humble uptime check

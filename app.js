@@ -173,9 +173,10 @@ app.post('/communication/incoming/email', function (req, res) {
 
     const message = {
       'from': fromEmail,
-      body,
-      attachments,
+      'body': body,
+      'attachments': attachments,
       'sender': 'user',
+      'seen': false
     };
 
     db.child('cases').once('value', function (s) {
@@ -202,8 +203,9 @@ app.post('/communication/incoming/sms', function (req, res) {
   const message = {
     'from': (req.body.From).match(numberPattern).join('').substr(-10),
     'body': req.body.Body,
-    attachments,
+    'attachments': attachments,
     'sender': 'user',
+    'seen': false
   };
 
 

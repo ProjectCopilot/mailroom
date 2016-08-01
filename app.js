@@ -157,7 +157,8 @@ app.post('/communication/incoming/email', function (req, res) {
     const rawEmailBody = fields.text[0];
     const fromHeader = fields.from[0];
 
-    const body = rawEmailBody;// stripEmail(rawEmailBody, fromHeader);
+    const body = communicate.stripEmail(rawEmailBody);
+    console.log(body);
 
     const attachments = [];
     for (const key in files) {
@@ -252,12 +253,6 @@ function validateRequestParameters(schema, body) {
   }
 
   return { valid, reason };
-}
-
-
-// Removes reply message headers from emails
-function stripEmail(emailString, fromHeader) {
-  return emailString.substr(0, emailString.indexOf(fromHeader));
 }
 
 

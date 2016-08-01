@@ -25,6 +25,7 @@
     "body-parser": "^1.15.2",
     "colors": "^1.1.2",
     "dotenv": "^2.0.0",
+    "emailreplyparser": "0.0.5",
     "express": "^4.14.0",
     "firebase": "^3.2.0",
     "hashids": "^1.0.2",

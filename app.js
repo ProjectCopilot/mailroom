@@ -158,7 +158,6 @@ app.post('/communication/incoming/email', function (req, res) {
     const fromHeader = fields.from[0];
 
     const body = communicate.stripEmail(rawEmailBody);
-    console.log(body);
 
     const attachments = [];
     for (const key in files) {

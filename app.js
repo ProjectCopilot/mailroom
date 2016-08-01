@@ -43,7 +43,7 @@ const hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
   the user-client and adds it to a database (currently RethinkDB)
 */
 app.post('/api/addUserRequest', function (req, res) {
-  // specify post body schema
+  // specify required POST body schema
   const schema = {
     referral: 'String',
     name: 'String',
@@ -68,12 +68,12 @@ app.post('/api/addUserRequest', function (req, res) {
         for (const k in snapshot.val()) {
           const numberPattern = /\d+/g;
 
-          if (req.body.contactMethod === 'SMS') {
+          if (snapshot.val()[k].contactMethod === 'SMS') {
             if ((snapshot.val()[k].contact).match(numberPattern).join('').substr(-10) === (req.body.contact).match(numberPattern).join('').substr(-10)) {
               hasDuplicateCase = true;
               break;
             }
-          } else if (req.body.contactMethod == 'Email' && snapshot.val()[k].contact == req.body.contact) {
+          } else if (snapshot.val()[k].contactMethod == 'Email' && snapshot.val()[k].contact == req.body.contact) {
             hasDuplicateCase = true;
             break;
           }

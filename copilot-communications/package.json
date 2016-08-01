@@ -15,6 +15,7 @@
   "dependencies": {
     "colors": "^1.1.2",
     "dotenv": "^2.0.0",
+    "emailreplyparser": "0.0.5",
     "sendgrid": "^1.9.2",
     "twilio": "^2.9.1"
   }

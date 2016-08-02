@@ -2,20 +2,21 @@
   * Project Copilot Communications Sysmte
   * Seamlessly handles all communication between volunteers and users
 */
-const colors = require('colors');
-const dotenv = require('dotenv').config({ path: __dirname + '/../.env' });
 const twilio = require('twilio');
 const sms = new twilio.RestClient(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const email = require('sendgrid')(process.env.SENDGRID_API_KEY);
 const emailParser = require('emailreplyparser');
 const fs = require('fs');
 
+require('colors');
+require('dotenv').config({ path: `${__dirname}/../.env` });
+
 exports = module.exports = {};
 
 // Sends an outgoing message
-exports.send = function (type, contact, body, subject) {
-  if (type.toLowerCase() == 'email') {
-    fs.readFile(__dirname + '/../templates/message.html', 'utf-8', function (err, data) {
+exports.send = (type, contact, body, subject) => {
+  if (type.toLowerCase() === 'email') {
+    fs.readFile(`${__dirname}/../templates/message.html`, 'utf-8', (err, data) => {
       const emailBody = data.replace(/{HEADER-MESSAGE}/g, subject).replace(/{MESSAGE-BODY}/g, body);
 
       email.send({
@@ -24,17 +25,17 @@ exports.send = function (type, contact, body, subject) {
         fromname: 'Project Copilot',
         subject,
         html: emailBody,
-      }, function (err, json) {
-        if (err) { return console.error(err); }
+      }, (e) => {
+        if (e) { return console.error(e); }
         console.log('Successfully sent email.'.green);
       });
     });
-  } else if (type.toLowerCase() == 'sms') {
+  } else if (type.toLowerCase() === 'sms') {
     sms.sms.messages.create({
       to: contact,
       from: process.env.TWILIO_PHONE_NUMBER,
       body,
-    }, function (e, m) {
+    }, (e, m) => {
       if (!e) {
         console.log('Successfully sent SMS with SID'.green, (m.sid).magenta);
       } else {
@@ -45,6 +46,4 @@ exports.send = function (type, contact, body, subject) {
 };
 
 // Isolates email body in giant email conversation blob
-exports.stripEmail = function (body) {
-  return emailParser.EmailReplyParser.parse_reply(body);
-}
+exports.stripEmail = (body) => emailParser.EmailReplyParser.parse_reply(body);

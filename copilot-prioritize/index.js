@@ -6,10 +6,11 @@
 
 exports = module.exports = {};
 
-exports.sort = function (l) {
+exports.sort = (l) => {
   let sorted = l.slice();
-  sorted = sorted.sort(function (a, b) {
-    return new Date(a.time_submitted).getTime() - new Date(b.time_submitted).getTime();
-  });
+  sorted = sorted.sort((a, b) =>
+    new Date(a.time_submitted).getTime() - new Date(b.time_submitted).getTime()
+  );
   return sorted;
 };
+

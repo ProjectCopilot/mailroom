@@ -2,14 +2,15 @@
   * Project Copilot Communications Sysmte
   * Seamlessly handles all communication between volunteers and users
 */
+require('colors');
+require('dotenv').config({ path: `${__dirname}/../.env` });
+
 const twilio = require('twilio');
 const sms = new twilio.RestClient(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const email = require('sendgrid')(process.env.SENDGRID_API_KEY);
 const emailParser = require('emailreplyparser');
 const fs = require('fs');
 
-require('colors');
-require('dotenv').config({ path: `${__dirname}/../.env` });
 
 exports = module.exports = {};
 

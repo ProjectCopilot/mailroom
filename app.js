@@ -136,8 +136,8 @@ app.get('/api/getRequests/:number', (req, res) => {
 
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
-  snap.val().forEach((k) => {
-    snap.val()[k].messages.forEach((m) => {
+  Object.keys(snap.val()).forEach((k) => {
+    Object.keys(snap.val()[k].messages).forEach((m) => {
       if (snap.val()[k].messages[m].sender === 'volunteer'
           && snap.val()[k].messages[m].sent === false) {
         const method = snap.val()[k].contactMethod;
@@ -152,7 +152,6 @@ db.child('cases').on('value', (snap) => {
     });
   });
 });
-
 
 /* COMMUNICATION ENDPOINTS/WEBHOOKS */
 
@@ -274,4 +273,3 @@ app.listen(process.env.PORT, process.env.HOSTNAME, () => {
   // eslint-disable-next-line no-undef
   console.log(`Node ${exec('node --version', { silent: true }).stdout}`);
 });
-

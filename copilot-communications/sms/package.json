@@ -1,5 +1,5 @@
 {
-  "name": "copilot-sms",
+  "name": "sms",
   "version": "1.0.0",
   "description": "Communication SMS.",
   "main": "index.js",

@@ -1,0 +1,19 @@
+{
+  "name": "copilot-email",
+  "version": "1.0.0",
+  "description": "Copilot email module.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Email",
+    "Copilot"
+  ],
+  "author": "Gautam Mittal",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^2.0.0",
+    "sendgrid": "^1.9.2"
+  }
+}

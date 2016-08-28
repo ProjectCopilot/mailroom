@@ -1,5 +1,5 @@
 /**
-  * Project Copilot Communications Sysmte
+  * Project Copilot Communications System
   * Seamlessly handles all communication between volunteers and users
 */
 require('colors');

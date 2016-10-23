@@ -243,7 +243,7 @@ app.get('/up', (req, res) => {
 function validateRequestParameters(schema, body) {
   let valid = true;
   let reason = 'None';
-  schema.forEach((field) => {
+  Object.keys(schema).forEach((field) => {
     if (!(field in body)) {
       valid = false;
       reason = 'Missing parameters.';

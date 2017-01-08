@@ -67,13 +67,14 @@ app.post('/api/addUserRequest', (req, res) => {
     // check if a request with the same contact info has not already been submitted
     db.child('cases').once('value', (snapshot) => {
       if (snapshot.val() !== null) {
-        snapshot.val().forEach((k) => {
+        Object.keys(snapshot.val()).forEach((k) => {
           const numberPattern = /\d+/g;
-          if (snapshot.val()[k].contactMethod === 'SMS'
-              && snapshot.val()[k].contact.match(numberPattern).join('').substr(-10)
-              === (req.body.contact).match(numberPattern).join('').substr(-10)) {
-            hasDuplicateCase = true;
-            return;
+
+          if (snapshot.val()[k].contactMethod === 'SMS' && (req.body.contact).match(numberPattern) !== null)
+            if (snapshot.val()[k].contact.match(numberPattern).join('').substr(-10)
+                === (req.body.contact).match(numberPattern).join('').substr(-10)) {
+              hasDuplicateCase = true;
+              return;
           } else if (snapshot.val()[k].contactMethod === 'Email'
               && snapshot.val()[k].contact === req.body.contact) {
             hasDuplicateCase = true;
@@ -136,21 +137,25 @@ app.get('/api/getRequests/:number', (req, res) => {
 
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
-  Object.keys(snap.val()).forEach((k) => {
-    Object.keys(snap.val()[k].messages).forEach((m) => {
-      if (snap.val()[k].messages[m].sender === 'volunteer'
-          && snap.val()[k].messages[m].sent === false) {
-        const method = snap.val()[k].contactMethod;
-        const contact = snap.val()[k].contact;
-        const body = snap.val()[k].messages[m].body;
-        const subject = 'New Message';
-        communicate.send(method, contact, body, subject);
-        // eslint-disable-next-line newline-per-chained-call
-        db.child('cases').child(k).child('messages').child(m).child('sent')
-          .set(true);
+  if (snap.val() != null) {
+    Object.keys(snap.val()).forEach((k) => {
+      if (snap.val()[k].messages != null) {
+        Object.keys(snap.val()[k].messages).forEach((m) => {
+          if (snap.val()[k].messages[m].sender === 'volunteer'
+              && snap.val()[k].messages[m].sent === false) {
+            const method = snap.val()[k].contactMethod;
+            const contact = snap.val()[k].contact;
+            const body = snap.val()[k].messages[m].body;
+            const subject = 'New Message';
+            communicate.send(method, contact, body, subject);
+            // eslint-disable-next-line newline-per-chained-call
+            db.child('cases').child(k).child('messages').child(m).child('sent')
+              .set(true);
+          }
+        });
       }
     });
-  });
+  }
 });
 
 /* COMMUNICATION ENDPOINTS/WEBHOOKS */

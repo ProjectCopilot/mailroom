@@ -68,11 +68,9 @@ app.post('/api/addUserRequest', (req, res) => {
     db.child('cases').once('value', (snapshot) => {
       if (snapshot.val() !== null) {
         Object.keys(snapshot.val()).forEach((k) => {
-          const numberPattern = /\d+/g;
-
-          if (snapshot.val()[k].contactMethod === 'SMS' && (req.body.contact).match(numberPattern) !== null)
-            if (snapshot.val()[k].contact.match(numberPattern).join('').substr(-10)
-                === (req.body.contact).match(numberPattern).join('').substr(-10)) {
+          if (snapshot.val()[k].contactMethod === 'SMS' && validatePhoneNumber(req.body.contact) !== null)
+            if (validatePhoneNumber(snapshot.val()[k].contact).join('').substr(-10)
+                === validatePhoneNumber(req.body.contact).join('').substr(-10)) {
               hasDuplicateCase = true;
               return;
           } else if (snapshot.val()[k].contactMethod === 'Email'
@@ -212,10 +210,8 @@ app.post('/communication/incoming/sms', (req, res) => {
     attachments.push(req.body[`MediaUrl${i.toString()}`]);
   }
 
-  const numberPattern = /\d+/g;
-
   const message = {
-    from: (req.body.From).match(numberPattern).join('').substr(-10),
+    from: validatePhoneNumber(req.body.From).join('').substr(-10),
     body: req.body.Body,
     attachments,
     sender: 'user',
@@ -225,7 +221,7 @@ app.post('/communication/incoming/sms', (req, res) => {
 
   db.child('cases').once('value', (s) => {
     s.val().forEach((k) => {
-      const match = s.val()[k].contact.match(numberPattern);
+      const match = validatePhoneNumber(s.val()[k].contact);
       if (match && match.join('').substr(-10) === message.from) {
         db.child('cases').child(k).child('messages')
           .push(message);
@@ -269,6 +265,11 @@ function validateRequestParameters(schema, body) {
   });
 
   return { valid, reason };
+}
+
+function validatePhoneNumber(number) {
+  const numberPattern = /\d+/g;
+  return number.match(numberPattern);
 }
 
 

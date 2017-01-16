@@ -190,7 +190,7 @@ app.post('/communication/incoming/email', (req, res) => {
     };
 
     db.child('cases').once('value', (s) => {
-      s.val().forEach((k) => {
+      Object.keys(s.val()).forEach((k) => {
         if (s.val()[k].contact === message.from) {
           db.child('cases').child(k).child('messages')
             .push(message);
@@ -220,7 +220,7 @@ app.post('/communication/incoming/sms', (req, res) => {
 
 
   db.child('cases').once('value', (s) => {
-    s.val().forEach((k) => {
+    Object.keys(s.val()).forEach((k) => {
       const match = validatePhoneNumber(s.val()[k].contact);
       if (match && match.join('').substr(-10) === message.from) {
         db.child('cases').child(k).child('messages')

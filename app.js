@@ -1,5 +1,7 @@
-// Project Copilot Core Services
-// Copyright 2016 Project Copilot
+/*
+  * Project Copilot Mailroom
+  * (c) Copyright 2017 Project Copilot
+*/
 
 const app = require('express')();
 const bandname = require('bandname');
@@ -8,7 +10,6 @@ const communicate = require(`${__dirname}/copilot-communications/index.js`);
 const firebase = require('firebase');
 const hashid = require('hashids');
 const multiparty = require('multiparty');
-// eslint-disable-next-line no-unused-vars
 const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
 require('colors');
@@ -18,23 +19,20 @@ require('shelljs/global');
 /* SET UP */
 app.use(bodyParser.json({ extended: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => { // enable CORS and assume JSON return structure
+app.use((req, res, next) => { // Enable CORS requests
   res.setHeader('Content-Type', 'application/json');
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
-// setup Firebase
+// Initialize Firebase
 firebase.initializeApp({
   serviceAccount: `${__dirname}/${process.env.FIREBASE_KEY_PATH}`,
   databaseURL: `https://${process.env.FIREBASE_ID}.firebaseio.com`,
 });
-
-// Initialize database
 const db = firebase.database().ref('/');
 
-// eslint-disable-next-line new-cap
 const hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
 
 
@@ -146,7 +144,7 @@ db.child('cases').on('value', (snap) => {
             const body = snap.val()[k].messages[m].body;
             const subject = 'New Message';
             communicate.send(method, contact, body, subject);
-            // eslint-disable-next-line newline-per-chained-call
+
             db.child('cases').child(k).child('messages').child(m).child('sent')
               .set(true);
           }
@@ -171,7 +169,7 @@ app.post('/communication/incoming/email', (req, res) => {
     files.forEach((key) => {
       const fileInfo = files[key][0];
       const path = fileInfo.path;
-      // eslint-disable-next-line max-len, no-undef
+
       const uploadOutString = exec(`${__dirname}/util/imgur.sh ${path} ${process.env.IMGUR_CLIENT_ID}`, { silent: true }).stdout.replace(/\/n/g, '').trim();
       const uploadResponse = uploadOutString.indexOf('Error: ENOSPC') > -1 ? false
             : uploadOutString;
@@ -239,8 +237,7 @@ app.get('/up', (req, res) => {
 
 /* HELPER FUNCTIONS */
 
-// given a body schema and the actual request body, return whether request body is valid or not and
-// reason
+// Does a request body adhere to a specified schema?
 function validateRequestParameters(schema, body) {
   let valid = true;
   let reason = 'None';
@@ -272,10 +269,9 @@ function validatePhoneNumber(number) {
   return number.match(numberPattern);
 }
 
+module.exports = {validateRequestParameters: validateRequestParameters, validatePhoneNumber: validatePhoneNumber};
 
 app.listen(process.env.PORT, process.env.HOSTNAME, () => {
   console.log(('Copilot Core Services running at ').blue
     + (`${process.env.HOSTNAME}:${process.env.PORT}`).magenta);
-  // eslint-disable-next-line no-undef
-  console.log(`Node ${exec('node --version', { silent: true }).stdout}`);
 });

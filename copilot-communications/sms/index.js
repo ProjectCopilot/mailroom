@@ -5,7 +5,7 @@ const client = new twilio.RestClient(process.env.TWILIO_ACCOUNT_SID, process.env
 
 exports = module.exports = {};
 exports.send = (contact, body) => {
-  client.sms.messages.create({
+  client.messages.create({
     to: contact,
     from: process.env.TWILIO_PHONE_NUMBER,
     body,
@@ -14,6 +14,7 @@ exports.send = (contact, body) => {
       console.log('Successfully sent SMS with SID', m.sid);
     } else {
       console.log('Error sending SMS message to ' + contact);
+      console.log(e);
     }
   });
 }

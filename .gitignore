@@ -1,3 +1,4 @@
 node_modules
 .env
 project-copilot-firebase-key.json
+package-lock.json

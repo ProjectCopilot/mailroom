@@ -166,7 +166,8 @@ app.post('/communication/incoming/email', (req, res) => {
     const body = communicate.stripEmail(rawEmailBody);
 
     const attachments = [];
-    files.forEach((key) => {
+
+    Object.keys(files).forEach((key) => {
       const fileInfo = files[key][0];
       const path = fileInfo.path;
 

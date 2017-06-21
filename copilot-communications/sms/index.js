@@ -8,7 +8,7 @@ exports.send = (contact, body) => {
   client.messages.create({
     to: contact,
     from: process.env.TWILIO_PHONE_NUMBER,
-    body: body,
+    body,
   }, (e, m) => {
     if (!e) {
       console.log('Successfully sent SMS with SID', m.sid);

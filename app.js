@@ -186,6 +186,7 @@ app.post('/communication/incoming/email', (req, res) => {
       attachments,
       sender: 'user',
       seen: false,
+      time: Date.now()
     };
 
     db.child('cases').once('value', (s) => {
@@ -215,6 +216,7 @@ app.post('/communication/incoming/sms', (req, res) => {
     attachments,
     sender: 'user',
     seen: false,
+    time: Date.now()
   };
 
 

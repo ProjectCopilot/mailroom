@@ -13,7 +13,7 @@ exports.send = (contact, body, subject) => {
       from: process.env.SENDGRID_EMAIL,
       fromname: 'Project Copilot',
       subject,
-      html: emailBody,
+      html: emailBody
     });
 
     const conversation_id = new Buffer(contact).toString('base64');

@@ -154,6 +154,17 @@ db.child('cases').on('value', (snap) => {
   }
 });
 
+// Watch inactive cases and open them up if volunteers have not done anything for over 1 hour
+setInterval(() => {
+  db.child('cases').once('value', (snap) => {
+    Object.keys(snap.val()).forEach((k) => {
+      if (Date.now() - snap.val()[k].last_modified > 60 * 60 * 1000)
+        db.child('cases').child(k).child('helped').set(false);
+    });
+  });
+}, 1000);
+
+
 /* COMMUNICATION ENDPOINTS/WEBHOOKS */
 
 // Incoming email (SendGrid) webhook

@@ -4,6 +4,8 @@
   "description": "Project Copilot core backend services.",
   "main": "app.js",
   "scripts": {
+    "build": "./build.sh",
+    "start": "node app.js",
     "test": "./node_modules/.bin/mocha --reporter spec"
   },
   "repository": {

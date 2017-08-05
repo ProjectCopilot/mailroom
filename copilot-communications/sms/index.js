@@ -15,6 +15,7 @@ exports.send = (contact, body) => {
     } else {
       console.log('Error sending SMS message to ' + contact);
       console.log(e);
+      throw e;
     }
   });
 }

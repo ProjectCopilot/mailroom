@@ -143,7 +143,13 @@ db.child('cases').on('value', (snap) => {
             const contact = snap.val()[k].contact;
             const body = snap.val()[k].messages[m].body;
             const subject = 'New Message';
-            communicate.send(method, contact, body, subject);
+
+            // Send the message
+            try {
+              communicate.send(method, contact, body, subject);
+            } catch (err) { // Respond appropriately if something fails
+              db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+            }
 
             db.child('cases').child(k).child('messages').child(m).child('sent')
               .set(true);

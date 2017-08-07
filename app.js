@@ -13,6 +13,7 @@ const multiparty = require('multiparty');
 const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
 require('colors');
+require('now-logs')('cookies');
 require('dotenv').config({ path: `${__dirname}/.env` });
 require('shelljs/global');
 

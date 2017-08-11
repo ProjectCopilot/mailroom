@@ -122,7 +122,16 @@ app.get('/api/getRequests/:number', (req, res) => {
 
   db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
     .once('value', (snapshot) => {
-      res.send(snapshot.val());
+	// filter out private case properties
+	let filtered = {};
+	Object.keys(snapshot.val()).forEach((k) => {
+	    filtered[k] = {
+		display_name: snapshot.val()[k].display_name,
+		gender: snapshot.val()[k].gender,
+		helped: snapshot.val()[k].helped
+	    };
+	});
+	res.send(filtered);
     });
 });
 

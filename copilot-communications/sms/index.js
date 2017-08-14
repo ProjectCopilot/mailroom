@@ -11,11 +11,12 @@ exports.send = (contact, body) => {
     body,
   }, (e, m) => {
     if (!e) {
-      console.log('Successfully sent SMS with SID', m.sid);
+	console.log('Successfully sent SMS with SID', m.sid);
+	return "Success";
     } else {
-      console.log('Error sending SMS message to ' + contact);
-      console.log(e);
-      throw e;
+	console.log('Error sending SMS message to ' + contact);
+	console.log(e);
+	return "Error";
     }
   });
 }

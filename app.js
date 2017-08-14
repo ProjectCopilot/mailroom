@@ -118,12 +118,12 @@ app.post('/api/addUserRequest', (req, res) => {
 */
 app.get('/api/getRequests/:number', (req, res) => {
     // get the number of desired cases
-  const numRequests = req.params.number;
+    const numRequests = req.params.number;
 
-  db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-    .once('value', (snapshot) => {
-      res.send(snapshot.val());
-    });
+    db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
+	.once('value', (snapshot) => {
+	    res.send(snapshot.val());
+	});
 });
 
 
@@ -133,31 +133,29 @@ app.get('/api/getRequests/:number', (req, res) => {
 
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
-  if (snap.val() != null) {
-    Object.keys(snap.val()).forEach((k) => {
-      if (snap.val()[k].messages != null) {
-        Object.keys(snap.val()[k].messages).forEach((m) => {
-          if (snap.val()[k].messages[m].sender === 'volunteer'
-              && snap.val()[k].messages[m].sent === false) {
-            const method = snap.val()[k].contactMethod;
-            const contact = snap.val()[k].contact;
-            const body = snap.val()[k].messages[m].body;
-            const subject = 'New Message';
+    if (snap.val() != null) {
+	Object.keys(snap.val()).forEach((k) => {
+	    if (snap.val()[k].messages != null) {
+		Object.keys(snap.val()[k].messages).forEach((m) => {
+		    if (snap.val()[k].messages[m].sender === 'volunteer'
+			&& snap.val()[k].messages[m].sent === false) {
+			const method = snap.val()[k].contactMethod;
+			const contact = snap.val()[k].contact;
+			const body = snap.val()[k].messages[m].body;
+			const subject = 'New Message';
 
-            // Send the message
-            try {
-              communicate.send(method, contact, body, subject);
-            } catch (err) { // Respond appropriately if something fails
-              db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
-            }
-
-            db.child('cases').child(k).child('messages').child(m).child('sent')
-              .set(true);
-          }
-        });
-      }
-    });
-  }
+			// Send the message
+			const call = communicate.send(method, contact, body, subject);
+			if (call == 'Success')
+			    db.child('cases').child(k).child('messages').child(m).child('sent')
+			    .set(true);
+			else
+			    db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+		    }
+		});
+	    }
+	});
+    }
 });
 
 // Watch inactive cases and open them up if volunteers have not done anything for over 1 hour
@@ -247,51 +245,51 @@ app.post('/communication/incoming/sms', (req, res) => {
     });
   });
 
-  res.send('<?xml version="1.0" encoding="UTF-8" ?><Response></Response>');
+    res.send('<?xml version="1.0" encoding="UTF-8" ?><Response></Response>');
 });
 
 // Our humble uptime check
 app.get('/up', (req, res) => {
-  res.status(200).end();
+    res.status(200).end();
 });
 
 /* HELPER FUNCTIONS */
 
 // Does a request body adhere to a specified schema?
 function validateRequestParameters(schema, body) {
-  let valid = true;
-  let reason = 'None';
-  Object.keys(schema).forEach((field) => {
-    if (!(field in body)) {
-      valid = false;
-      reason = 'Missing parameters.';
-      return;
-    }
-    if (typeof(schema[field]) === 'string' && body[field].length === 0) {
-      valid = false;
-      reason = 'Cannot pass empty string as parameter value.';
-      return;
-    }
-    if (typeof(schema[field]) === 'number'
-        && typeof(body[field]) === 'string'
-        && isNaN(parseInt(body[field], 10))) {
-      valid = false;
-      reason = 'Cannot pass NaN value as numreic parameter value.';
-      return;
-    }
-  });
+    let valid = true;
+    let reason = 'None';
+    Object.keys(schema).forEach((field) => {
+	if (!(field in body)) {
+	    valid = false;
+	    reason = 'Missing parameters.';
+	    return;
+	}
+	if (typeof(schema[field]) === 'string' && body[field].length === 0) {
+	    valid = false;
+	    reason = 'Cannot pass empty string as parameter value.';
+	    return;
+	}
+	if (typeof(schema[field]) === 'number'
+            && typeof(body[field]) === 'string'
+            && isNaN(parseInt(body[field], 10))) {
+	    valid = false;
+	    reason = 'Cannot pass NaN value as numreic parameter value.';
+	    return;
+	}
+    });
 
-  return { valid, reason };
+    return { valid, reason };
 }
 
 function validatePhoneNumber(number) {
-  const numberPattern = /\d+/g;
-  return number.match(numberPattern);
+    const numberPattern = /\d+/g;
+    return number.match(numberPattern);
 }
 
 module.exports = {validateRequestParameters: validateRequestParameters, validatePhoneNumber: validatePhoneNumber};
 
 app.listen(process.env.PORT, process.env.HOSTNAME, () => {
-  console.log(('Copilot Core Services running at ').blue
-    + (`${process.env.HOSTNAME}:${process.env.PORT}`).magenta);
+    console.log(('Copilot Core Services running at ').blue
+		+ (`${process.env.HOSTNAME}:${process.env.PORT}`).magenta);
 });

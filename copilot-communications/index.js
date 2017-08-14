@@ -12,9 +12,9 @@ exports = module.exports = {};
 // Sends an outgoing message
 exports.send = (type, contact, body, subject) => {
   if (type.toLowerCase() === 'email') {
-    email.send(contact, body, subject);
+    return email.send(contact, body, subject);
   } else if (type.toLowerCase() === 'sms') {
-    sms.send(contact, body);
+    return sms.send(contact, body);
   }
 };
 

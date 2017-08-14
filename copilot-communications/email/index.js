@@ -24,9 +24,10 @@ exports.send = (contact, body, subject) => {
     email.send(message, (e, json) => {
       if (e) {
         console.error(e);
-        throw e;
+        return "Error";
       }
       console.log('Successfully sent email.');
+      return "Success";
     });
   });
 }

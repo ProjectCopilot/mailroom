@@ -14,6 +14,7 @@ const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
 require('colors');
 require('dotenv').config({ path: `${__dirname}/.env` });
+require('now-logs')(process.env.NOW_LOGS_SECRET);
 require('shelljs/global');
 
 /* SET UP */

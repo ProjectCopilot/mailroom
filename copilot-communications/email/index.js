@@ -22,8 +22,12 @@ exports.send = (contact, body, subject) => {
     message.addHeader({'References': `<${conversation_id}@support.copilot.help>`});
 
     email.send(message, (e, json) => {
-      if (e) { return console.error(e); }
+      if (e) {
+        console.error(e);
+        return "Error";
+      }
       console.log('Successfully sent email.');
+      return "Success";
     });
   });
 }

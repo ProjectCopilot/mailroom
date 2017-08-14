@@ -14,6 +14,7 @@ const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
 require('colors');
 require('dotenv').config({ path: `${__dirname}/.env` });
+require('now-logs')(process.env.NOW_LOGS_SECRET);
 require('shelljs/global');
 
 /* SET UP */
@@ -121,9 +122,18 @@ app.get('/api/getRequests/:number', (req, res) => {
     const numRequests = req.params.number;
 
     db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-	.once('value', (snapshot) => {
-	    res.send(snapshot.val());
-	});
+      .once('value', (snapshot) => {
+        // filter out private case properties
+        let filtered = {};
+        Object.keys(snapshot.val()).forEach((k) => {
+            filtered[k] = {
+          display_name: snapshot.val()[k].display_name,
+          gender: snapshot.val()[k].gender,
+          helped: snapshot.val()[k].helped
+            };
+        });
+        res.send(filtered);
+    });
 });
 
 

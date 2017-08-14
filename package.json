@@ -4,6 +4,8 @@
   "description": "Project Copilot core backend services.",
   "main": "app.js",
   "scripts": {
+    "build": "./build.sh",
+    "start": "node app.js",
     "test": "./node_modules/.bin/mocha --reporter spec"
   },
   "repository": {
@@ -30,6 +32,7 @@
     "firebase": "^3.2.0",
     "hashids": "^1.0.2",
     "multiparty": "^4.1.2",
+    "now-logs": "0.0.7",
     "shelljs": "^0.7.0"
   },
   "devDependencies": {

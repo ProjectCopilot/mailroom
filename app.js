@@ -21,16 +21,16 @@ require('shelljs/global');
 app.use(bodyParser.json({ extended: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => { // Enable CORS requests
-  res.setHeader('Content-Type', 'application/json');
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
+    res.setHeader('Content-Type', 'application/json');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
 });
 
 // Initialize Firebase
 firebase.initializeApp({
-  serviceAccount: `${__dirname}/${process.env.FIREBASE_KEY_PATH}`,
-  databaseURL: `https://${process.env.FIREBASE_ID}.firebaseio.com`,
+    serviceAccount: `${__dirname}/${process.env.FIREBASE_KEY_PATH}`,
+    databaseURL: `https://${process.env.FIREBASE_ID}.firebaseio.com`,
 });
 const db = firebase.database().ref('/');
 
@@ -44,72 +44,88 @@ const hash = new hashid(process.env.HASH_SALT, process.env.HASH_LENGTH);
   the user-client and adds it to a database (currently RethinkDB)
 */
 app.post('/api/addUserRequest', (req, res) => {
-  // specify required POST body schema
-  const schema = {
-    referral: 'String',
-    name: 'String',
-    age: 0,
-    gender: 'String',
-    school: 'String',
-    contactMethod: 'String',
-    contact: 'String',
-    situation: 'String',
-  };
+    // specify required POST body schema
+    const schema = {
+	referral: 'String',
+	name: 'String',
+	age: 0,
+	gender: 'String',
+	school: 'String',
+	contactMethod: 'String',
+	contact: 'String',
+	situation: 'String',
+    };
 
-  // validate the request body based on the specified schema
-  const checkParams = validateRequestParameters(schema, req.body);
+    // validate the request body based on the specified schema
+    const checkParams = validateRequestParameters(schema, req.body);
 
-  // process entry
-  if (checkParams.valid === true) {
-    let hasDuplicateCase = false;
+    // process entry
+    if (checkParams.valid === true) {
+	let hasDuplicateCase = false;
 
-    // check if a request with the same contact info has not already been submitted
-    db.child('cases').once('value', (snapshot) => {
-      if (snapshot.val() !== null) {
-        Object.keys(snapshot.val()).forEach((k) => {
-          if (snapshot.val()[k].contactMethod === 'SMS' && validatePhoneNumber(req.body.contact) !== null)
-            if (validatePhoneNumber(snapshot.val()[k].contact).join('').substr(-10)
-                === validatePhoneNumber(req.body.contact).join('').substr(-10)) {
-              hasDuplicateCase = true;
-              return;
-          } else if (snapshot.val()[k].contactMethod === 'Email'
-              && snapshot.val()[k].contact === req.body.contact) {
-            hasDuplicateCase = true;
-            return;
-          }
-        });
+	// check if a request with the same contact info has not already been submitted
+	db.child('cases').once('value', (snapshot) => {
+	    if (snapshot.val() !== null) {
+		Object.keys(snapshot.val()).forEach((k) => {
+		    if (snapshot.val()[k].contactMethod === 'SMS' && validatePhoneNumber(req.body.contact) !== null)
+			if (validatePhoneNumber(snapshot.val()[k].contact).join('').substr(-10)
+			    === validatePhoneNumber(req.body.contact).join('').substr(-10)) {
+			    hasDuplicateCase = true;
+			    return;
+			} else if (snapshot.val()[k].contactMethod === 'Email'
+				   && snapshot.val()[k].contact === req.body.contact) {
+			    hasDuplicateCase = true;
+			    return;
+			}
+		});
 
-        if (hasDuplicateCase === true) {
-          res.status(409).end();
-          return;
-        }
+		if (hasDuplicateCase === true) {
+		    res.status(409).end();
+		    return;
+		}
 
-        const pendingRequest = req.body;
-        pendingRequest.display_name = bandname();
-        pendingRequest.time_submitted = new Date().getTime();
-        pendingRequest.helped = false;
-        const id = hash.encode(pendingRequest.time_submitted);
-        console.log('New case submitted with ID: '.green + (id).magenta);
-        db.child('cases').child(id).set(req.body, () => {
-          res.status(200).end();
-        });
-      } else {
-        const pendingRequest = req.body;
-        pendingRequest.display_name = bandname();
-        pendingRequest.time_submitted = new Date().getTime();
-        pendingRequest.helped = false;
-        const id = hash.encode(pendingRequest.time_submitted);
-        console.log('New case submitted with ID: '.green + (id).magenta);
-        db.child('cases').child(id).set(req.body, () => {
-          res.status(200).end();
-        });
-      }
-    });
-  } else { // otherwise return error
-    console.log('/api/addUserRequest'.cyan + ' had bad request for: '.blue
-                + (checkParams.reason).red);
-    res.status(500).end();
-  }
+		const pendingRequest = req.body;
+		pendingRequest.display_name = bandname();
+		pendingRequest.time_submitted = new Date().getTime();
+		pendingRequest.helped = false;
+		const id = hash.encode(pendingRequest.time_submitted);
+		console.log('New case submitted with ID: '.green + (id).magenta);
+		db.child('cases').child(id).set(req.body, () => {
+		    const message = {
+			from: req.body.contact,
+			body: req.body.situation,
+			sender: 'user',
+			seen: false,
+			time: Date.now()
+		    };
+		    db.child('cases').child(id).child('messages').push(message);
+		    res.status(200).end();
+		});
+	    } else {
+		const pendingRequest = req.body;
+		pendingRequest.display_name = bandname();
+		pendingRequest.time_submitted = new Date().getTime();
+		pendingRequest.helped = false;
+		const id = hash.encode(pendingRequest.time_submitted);
+		console.log('New case submitted with ID: '.green + (id).magenta);
+		db.child('cases').child(id).set(req.body, () => {
+		    const message = {
+			from: req.body.contact,
+			body: req.body.situation,
+			sender: 'user',
+			seen: false,
+			time: Date.now()
+		    };
+		    db.child('cases').child(id).child('messages').push(message);
+		    res.status(200).end();
+		});
+	    }
+	});
+    } else { // otherwise return error
+	console.log('/api/addUserRequest'.cyan + ' had bad request for: '.blue
+                    + (checkParams.reason).red);
+	res.status(500).end();
+    }
 });
 
 
@@ -122,18 +138,18 @@ app.get('/api/getRequests/:number', (req, res) => {
     const numRequests = req.params.number;
 
     db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-      .once('value', (snapshot) => {
-        // filter out private case properties
-        let filtered = {};
-        Object.keys(snapshot.val()).forEach((k) => {
-            filtered[k] = {
-          display_name: snapshot.val()[k].display_name,
-          gender: snapshot.val()[k].gender,
-          helped: snapshot.val()[k].helped
-            };
-        });
-        res.send(filtered);
-    });
+	.once('value', (snapshot) => {
+            // filter out private case properties
+            let filtered = {};
+            Object.keys(snapshot.val()).forEach((k) => {
+		filtered[k] = {
+		    display_name: snapshot.val()[k].display_name,
+		    gender: snapshot.val()[k].gender,
+		    helped: snapshot.val()[k].helped
+		};
+            });
+            res.send(filtered);
+	});
 });
 
 
@@ -145,22 +161,27 @@ app.get('/api/getRequests/:number', (req, res) => {
 db.child('cases').on('value', (snap) => {
     if (snap.val() != null) {
 	Object.keys(snap.val()).forEach((k) => {
-	    if (snap.val()[k].messages != null) {
-		Object.keys(snap.val()[k].messages).forEach((m) => {
-		    if (snap.val()[k].messages[m].sender === 'volunteer'
-			&& snap.val()[k].messages[m].sent === false) {
-			const method = snap.val()[k].contactMethod;
-			const contact = snap.val()[k].contact;
-			const body = snap.val()[k].messages[m].body;
+	    let userCase = snap.val()[k];
+	    if (userCase.messages != null) {
+		Object.keys(userCase.messages).forEach((m) => {
+		    if (userCase.messages[m].sender === 'volunteer'
+			&& userCase.messages[m].sent === false) {
+			const method = userCase.contactMethod;
+			const contact = userCase.contact;
+			const body = userCase.messages[m].body;
 			const subject = 'New Message';
 
+			db.child('cases').child(k).child('messages').child(m).child('sent')
+			    .set(true);
+			
 			// Send the message
 			const call = communicate.send(method, contact, body, subject);
-			if (call == 'Success')
-			    db.child('cases').child(k).child('messages').child(m).child('sent')
-			    .set(true);
-			else
+			call.then((data) => {
+			    
+			    
+			}).catch((e) => {
 			    db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+			});
 		    }
 		});
 	    }
@@ -170,12 +191,14 @@ db.child('cases').on('value', (snap) => {
 
 // Watch inactive cases and open them up if volunteers have not done anything for over 1 hour
 setInterval(() => {
-  db.child('cases').once('value', (snap) => {
-    Object.keys(snap.val()).forEach((k) => {
-      if (Date.now() - snap.val()[k].last_modified > 60 * 60 * 1000)
-        db.child('cases').child(k).child('helped').set(false);
+    db.child('cases').once('value', (snap) => {
+	if (snap.val() != null) {
+	    Object.keys(snap.val()).forEach((k) => {
+		if (Date.now() - snap.val()[k].last_modified > 60 * 60 * 1000)
+		    db.child('cases').child(k).child('helped').set(false);
+	    });
+	}
     });
-  });
 }, 1000);
 
 
@@ -183,77 +206,83 @@ setInterval(() => {
 
 // Incoming email (SendGrid) webhook
 app.post('/communication/incoming/email', (req, res) => {
-  const form = new multiparty.Form();
-  form.parse(req, (err, fields, files) => {
-    const fromEmail = JSON.parse(fields.envelope).from;
-    const rawEmailBody = fields.text[0];
+    const form = new multiparty.Form();
+    form.parse(req, (err, fields, files) => {
+	const fromEmail = JSON.parse(fields.envelope).from;
+	const toEmail = JSON.parse(fields.envelope).to;
+	if (process.env.SENDGRID_EMAIL != toEmail[0]) {
+	    res.status(200).end();
+	    return;
+	}
 
-    const body = communicate.stripEmail(rawEmailBody);
+	const rawEmailBody = fields.text[0];
 
-    const attachments = [];
+	const body = communicate.stripEmail(rawEmailBody);
 
-    Object.keys(files).forEach((key) => {
-      const fileInfo = files[key][0];
-      const path = fileInfo.path;
+	const attachments = [];
 
-      const uploadOutString = exec(`${__dirname}/util/imgur.sh ${path} ${process.env.IMGUR_CLIENT_ID}`, { silent: true }).stdout.replace(/\/n/g, '').trim();
-      const uploadResponse = uploadOutString.indexOf('Error: ENOSPC') > -1 ? false
-            : uploadOutString;
+	Object.keys(files).forEach((key) => {
+	    const fileInfo = files[key][0];
+	    const path = fileInfo.path;
 
-      if (uploadResponse !== false) {
-        attachments.push(uploadResponse);
-      }
+	    const uploadOutString = exec(`${__dirname}/util/imgur.sh ${path} ${process.env.IMGUR_CLIENT_ID}`, { silent: true }).stdout.replace(/\/n/g, '').trim();
+	    const uploadResponse = uploadOutString.indexOf('Error: ENOSPC') > -1 ? false
+		  : uploadOutString;
+
+	    if (uploadResponse !== false) {
+		attachments.push(uploadResponse);
+	    }
+	});
+
+	const message = {
+	    from: fromEmail,
+	    body,
+	    attachments,
+	    sender: 'user',
+	    seen: false,
+	    time: Date.now()
+	};
+
+	db.child('cases').once('value', (s) => {
+	    Object.keys(s.val()).forEach((k) => {
+		if (s.val()[k].contact === message.from) {
+		    db.child('cases').child(k).child('messages')
+			.push(message);
+		}
+	    });
+	});
+
+	res.status(200).end();
     });
-
-    const message = {
-      from: fromEmail,
-      body,
-      attachments,
-      sender: 'user',
-      seen: false,
-      time: Date.now()
-    };
-
-    db.child('cases').once('value', (s) => {
-      Object.keys(s.val()).forEach((k) => {
-        if (s.val()[k].contact === message.from) {
-          db.child('cases').child(k).child('messages')
-            .push(message);
-        }
-      });
-    });
-
-    res.status(200).end();
-  });
 });
 
 // Incoming SMS (Twilio) webhook
 app.post('/communication/incoming/sms', (req, res) => {
-  res.setHeader('Content-Type', 'application/xml');
-  const attachments = [];
-  for (let i = 0; i < parseInt(req.body.NumMedia, 10); i++) {
-    attachments.push(req.body[`MediaUrl${i.toString()}`]);
-  }
+    res.setHeader('Content-Type', 'application/xml');
+    const attachments = [];
+    for (let i = 0; i < parseInt(req.body.NumMedia, 10); i++) {
+	attachments.push(req.body[`MediaUrl${i.toString()}`]);
+    }
 
-  const message = {
-    from: validatePhoneNumber(req.body.From).join('').substr(-10),
-    body: req.body.Body,
-    attachments,
-    sender: 'user',
-    seen: false,
-    time: Date.now()
-  };
+    const message = {
+	from: validatePhoneNumber(req.body.From).join('').substr(-10),
+	body: req.body.Body,
+	attachments,
+	sender: 'user',
+	seen: false,
+	time: Date.now()
+    };
 
 
-  db.child('cases').once('value', (s) => {
-    Object.keys(s.val()).forEach((k) => {
-      const match = validatePhoneNumber(s.val()[k].contact);
-      if (match && match.join('').substr(-10) === message.from) {
-        db.child('cases').child(k).child('messages')
-          .push(message);
-      }
+    db.child('cases').once('value', (s) => {
+	Object.keys(s.val()).forEach((k) => {
+	    const match = validatePhoneNumber(s.val()[k].contact);
+	    if (match && match.join('').substr(-10) === message.from) {
+		db.child('cases').child(k).child('messages')
+		    .push(message);
+	    }
+	});
     });
-  });
 
     res.send('<?xml version="1.0" encoding="UTF-8" ?><Response></Response>');
 });

@@ -138,18 +138,18 @@ app.get('/api/getRequests/:number', (req, res) => {
     const numRequests = req.params.number;
 
     db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-	.once('value', (snapshot) => {
-            // filter out private case properties
-            let filtered = {};
-            Object.keys(snapshot.val()).forEach((k) => {
-		filtered[k] = {
-		    display_name: snapshot.val()[k].display_name,
-		    gender: snapshot.val()[k].gender,
-		    helped: snapshot.val()[k].helped
-		};
-            });
-            res.send(filtered);
-	});
+    .once('value', (snapshot) => {
+        // filter out private case properties
+        let filtered = {};
+        Object.keys(snapshot.val()).forEach((k) => {
+            filtered[k] = {
+                display_name: snapshot.val()[k].display_name,
+                gender: snapshot.val()[k].gender,
+                helped: snapshot.val()[k].helped
+            };
+        });
+        res.send(filtered);
+    });
 });
 
 
@@ -160,32 +160,32 @@ app.get('/api/getRequests/:number', (req, res) => {
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
     if (snap.val() != null) {
-	Object.keys(snap.val()).forEach((k) => {
-	    let userCase = snap.val()[k];
-	    if (userCase.messages != null) {
-		Object.keys(userCase.messages).forEach((m) => {
-		    if (userCase.messages[m].sender === 'volunteer'
-			&& userCase.messages[m].sent === false) {
-			const method = userCase.contactMethod;
-			const contact = userCase.contact;
-			const body = userCase.messages[m].body;
-			const subject = 'New Message';
+      Object.keys(snap.val()).forEach((k) => {
+          let userCase = snap.val()[k];
+          if (userCase.messages != null) {
+            Object.keys(userCase.messages).forEach((m) => {
+              if (userCase.messages[m].sender === 'volunteer'
+                  && userCase.messages[m].sent === false) {
+                    const method = userCase.contactMethod;
+                    const contact = userCase.contact;
+                    const body = userCase.messages[m].body;
+                    const subject = 'New Message';
 
-			db.child('cases').child(k).child('messages').child(m).child('sent')
-			    .set(true);
-			
-			// Send the message
-			const call = communicate.send(method, contact, body, subject);
-			call.then((data) => {
-			    
-			    
-			}).catch((e) => {
-			    db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
-			});
-		    }
-		});
-	    }
-	});
+                    db.child('cases').child(k).child('messages').child(m).child('sent')
+                        .set(true);
+
+                    // Send the message
+                    const call = communicate.send(method, contact, body, subject);
+                    call.then((data) => {
+                        // Success!
+                    }).catch((e) => {
+                        // There was an error sending the message
+                        db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+                    });
+                }
+            });
+          }
+      });
     }
 });
 

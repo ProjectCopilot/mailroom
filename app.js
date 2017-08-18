@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const communicate = require(`${__dirname}/copilot-communications/index.js`);
 const firebase = require('firebase');
 const hashid = require('hashids');
+const keen = require('keen-tracking');
 const multiparty = require('multiparty');
 const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
@@ -25,6 +26,12 @@ app.use((req, res, next) => { // Enable CORS requests
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
+});
+
+// Initialize analytics tracking
+var analytics = new keen({
+    projectId: process.env.KEEN_PROJECTID,
+    writeKey: process.env.KEEN_WRITEKEY
 });
 
 // Initialize Firebase
@@ -99,6 +106,16 @@ app.post('/api/addUserRequest', (req, res) => {
 			time: Date.now()
 		    };
 		    db.child('cases').child(id).child('messages').push(message);
+
+		    const log = {
+			gender: req.body.gender,
+			age: req.body.age,
+			method: req.body.contactMethod,
+			referral: req.body.referral,
+			school: req.body.school
+		    }
+		    analytics.addEvent('cases', log);
+
 		    res.status(200).end();
 		});
 	    } else {
@@ -117,6 +134,16 @@ app.post('/api/addUserRequest', (req, res) => {
 			time: Date.now()
 		    };
 		    db.child('cases').child(id).child('messages').push(message);
+
+		    const log = {
+			gender: req.body.gender,
+			age: req.body.age,
+			method: req.body.contactMethod,
+			referral: req.body.referral,
+			school:req.body.school
+		    }
+		    analytics.addEvent('cases', log);
+		    
 		    res.status(200).end();
 		});
 	    }
@@ -160,32 +187,61 @@ app.get('/api/getRequests/:number', (req, res) => {
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
     if (snap.val() != null) {
-      Object.keys(snap.val()).forEach((k) => {
-          let userCase = snap.val()[k];
-          if (userCase.messages != null) {
-            Object.keys(userCase.messages).forEach((m) => {
-              if (userCase.messages[m].sender === 'volunteer'
-                  && userCase.messages[m].sent === false) {
-                    const method = userCase.contactMethod;
-                    const contact = userCase.contact;
-                    const body = userCase.messages[m].body;
-                    const subject = 'New Message';
+	Object.keys(snap.val()).forEach((k) => {
+            let userCase = snap.val()[k];
+            if (userCase.messages != null) {
+		Object.keys(userCase.messages).forEach((m) => {
+		    const method = userCase.contactMethod;
+		    const contact = userCase.contact;
+		    const body = userCase.messages[m].body;
+		    const subject = 'New Message';
 
-                    db.child('cases').child(k).child('messages').child(m).child('sent')
-                        .set(true);
+		    if (userCase.messages[m].sender === 'volunteer'
+			&& userCase.messages[m].sent === false) {
+			
+			db.child('cases').child(k).child('messages').child(m).child('sent')
+                            .set(true);
 
-                    // Send the message
-                    const call = communicate.send(method, contact, body, subject);
-                    call.then((data) => {
-                        // Success!
-                    }).catch((e) => {
-                        // There was an error sending the message
-                        db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
-                    });
-                }
-            });
-          }
-      });
+			// Send the message
+			const call = communicate.send(method, contact, body, subject);
+			call.then((data) => {
+                            // Success!
+
+			    const log = {
+				length: body.length,
+				from: 'volunteer',
+				volunteer_id: new Buffer(userCase.from).toString('hex'),
+				delivered: true,
+				method,
+			    }
+			    analytics.addEvent('messages', log);
+			}).catch((e) => {
+                            // There was an error sending the message
+                            db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+
+			    const log = {
+				length: body.length,
+				from: 'volunteer',
+				volunteer_id: new Buffer(userCase.from).toString('hex'),
+				delivered: false,
+				method,
+			    }
+			    analytics.addEvent('messages', log);
+			});
+		    } else { // message is from user or was already sent by volunteer
+			if (userCase.messages[m].sender === 'user') {
+			    const log = {
+				length: body.length,
+				from: 'user',
+				delivered: true,
+				method,
+			    }
+			    analytics.addEvent('messages', log);
+			}
+		    }	  
+		});
+            }
+	});
     }
 });
 
@@ -195,7 +251,7 @@ setInterval(() => {
 	if (snap.val() != null) {
 	    Object.keys(snap.val()).forEach((k) => {
 		if (Date.now() - snap.val()[k].last_modified > 60 * 60 * 1000)
-		    db.child('cases').child(k).child('helped').set(false);
+		    db.child('cases').child(k).child('helped').set(false);		
 	    });
 	}
     });

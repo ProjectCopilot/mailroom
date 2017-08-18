@@ -1,7 +1,7 @@
 {
-  "name": "copilot-core-services",
+  "name": "mailroom",
   "version": "0.0.1",
-  "description": "Project Copilot core backend services.",
+  "description": "Copilot core backend services.",
   "main": "app.js",
   "scripts": {
     "build": "./build.sh",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProjectCopilot/core-services.git"
+    "url": "git+https://github.com/ProjectCopilot/mailroom.git"
   },
   "keywords": [
     "Project",
@@ -19,9 +19,9 @@
   "author": "Gautam Mittal",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ProjectCopilot/core-services/issues"
+    "url": "https://github.com/ProjectCopilot/mailroom/issues"
   },
-  "homepage": "https://github.com/ProjectCopilot/core-services#readme",
+  "homepage": "https://github.com/ProjectCopilot/mailroom#readme",
   "dependencies": {
     "bandname": "^1.0.0",
     "body-parser": "^1.15.2",

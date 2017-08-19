@@ -1,7 +1,7 @@
 /*
-  * Project Copilot Mailroom
-  * (c) Copyright 2017 Project Copilot
-*/
+ * Project Copilot Mailroom
+ * (c) Copyright 2017 Project Copilot
+ */
 
 const app = require('express')();
 const bandname = require('bandname');
@@ -29,7 +29,7 @@ app.use((req, res, next) => { // Enable CORS requests
 });
 
 // Initialize analytics tracking
-var analytics = new keen({
+let analytics = new keen({
     projectId: process.env.KEEN_PROJECTID,
     writeKey: process.env.KEEN_WRITEKEY
 });
@@ -165,17 +165,19 @@ app.get('/api/getRequests/:number', (req, res) => {
     const numRequests = req.params.number;
 
     db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-      .once('value', (snapshot) => {
-        // filter out private case properties
-        let filtered = {};
-        Object.keys(snapshot.val()).forEach((k) => {
-            filtered[k] = {
-		display_name: snapshot.val()[k].display_name,
-		gender: snapshot.val()[k].gender,
-		helped: snapshot.val()[k].helped
-            };
-        });
-        res.send(filtered);
+	.once('value', (snapshot) => {
+	    let filtered = {};
+	    if (snapshot.val() != null) {
+		// filter out private case properties
+		Object.keys(snapshot.val()).forEach((k) => {
+		    filtered[k] = {
+			display_name: snapshot.val()[k].display_name,
+			gender: snapshot.val()[k].gender,
+			helped: snapshot.val()[k].helped
+		    };
+		});
+	    }
+	    res.send(filtered);
     });
 });
 
@@ -210,10 +212,10 @@ db.child('cases').on('value', (snap) => {
 			    const log = {
 				length: body.length,
 				from: 'volunteer',
-				volunteer_id: new Buffer(userCase.from).toString('hex'),
+				volunteer_id: new Buffer(userCase.helped).toString('hex'),
 				delivered: true,
 				method,
-			    }
+			    };
 			    analytics.addEvent('messages', log);
 			}).catch((e) => {
                             // There was an error sending the message
@@ -222,22 +224,12 @@ db.child('cases').on('value', (snap) => {
 			    const log = {
 				length: body.length,
 				from: 'volunteer',
-				volunteer_id: new Buffer(userCase.from).toString('hex'),
+				volunteer_id: new Buffer(userCase.helped).toString('hex'),
 				delivered: false,
 				method,
-			    }
+			    };
 			    analytics.addEvent('messages', log);
 			});
-		    } else { // message is from user or was already sent by volunteer
-			if (userCase.messages[m].sender === 'user') {
-			    const log = {
-				length: body.length,
-				from: 'user',
-				delivered: true,
-				method,
-			    }
-			    analytics.addEvent('messages', log);
-			}
 		    }	  
 		});
             }
@@ -304,6 +296,14 @@ app.post('/communication/incoming/email', (req, res) => {
 		if (s.val()[k].contact === message.from) {
 		    db.child('cases').child(k).child('messages')
 			.push(message);
+
+		    const log = {
+			length: body.length,
+			from: 'user',
+			delivered: true,
+			method: 'Email',
+		    }
+		    analytics.addEvent('messages', log);
 		}
 	    });
 	});
@@ -329,13 +329,20 @@ app.post('/communication/incoming/sms', (req, res) => {
 	time: Date.now()
     };
 
-
     db.child('cases').once('value', (s) => {
 	Object.keys(s.val()).forEach((k) => {
 	    const match = validatePhoneNumber(s.val()[k].contact);
 	    if (match && match.join('').substr(-10) === message.from) {
 		db.child('cases').child(k).child('messages')
 		    .push(message);
+
+		const log = {
+		    length: req.body.Body,
+		    from: 'user',
+		    delivered: true,
+		    method: 'SMS',
+		}
+		analytics.addEvent('messages', log);
 	    }
 	});
     });

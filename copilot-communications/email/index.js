@@ -1,35 +1,36 @@
 require('dotenv').config({ path: `${__dirname}/../../.env` });
 
 const email = require('sendgrid')(process.env.SENDGRID_API_KEY);
-const fs = require('fs');
 
 exports = module.exports = {};
 
 exports.send = (contact, body, subject) => {
     return new Promise((resolve, reject) => {
-        fs.readFile(`${__dirname}/../../templates/message.html`, 'utf-8', (err, data) => {
-            const emailBody = data.replace(/{HEADER-MESSAGE}/g, subject).replace(/{MESSAGE-BODY}/g, body);
-            var message = new email.Email({
-                to: contact,
-                from: process.env.SENDGRID_EMAIL,
-                fromname: 'Project Copilot',
-                subject,
-                html: emailBody,
-                text: body
-            });
+        var message = new email.Email({
+            to: contact,
+            from: process.env.SENDGRID_EMAIL,
+            fromname: 'Project Copilot',
+            subject,
+            text: body
+        });
 
-            const conversation_id = new Buffer(contact).toString('base64');
-            message.addHeader({'In-Reply-To': `<${conversation_id}@support.copilot.help>`});
-            message.addHeader({'References': `<${conversation_id}@support.copilot.help>`});
+        const conversation_id = new Buffer(contact).toString('base64');
+        
+        message.addFilter('footer','enable', 1);
+        var footerMessage = "This email is confidential. If you are not the intended recipient, delete this email and all attachments immediately.";
+        message.addFilter('footer','text/plain','\n\n--\n' + footerMessage);
+        message.addFilter('footer','text/html','<p>--<br><i>' + footerMessage + "</i></p>");
+        
+        message.addHeader({'In-Reply-To': `<${conversation_id}@copilot.help>`});
+        message.addHeader({'References': `<${conversation_id}@copilot.help>`});
 
-            email.send(message, (e, json) => {
-                if (e) {
-                    console.error(e);
-                    return reject("Error");
-                }
-                console.log('Successfully sent email.');
-                return resolve("Success");
-            });
+        email.send(message, (e, json) => {
+            if (e) {
+                console.error(e);
+                return reject("Error");
+            }
+            console.log('Successfully sent email.');
+            return resolve("Success");
         });
     });
 }

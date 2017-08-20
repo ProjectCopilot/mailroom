@@ -208,7 +208,7 @@ db.child('cases').on('value', (snap) => {
 			const call = communicate.send(method, contact, body, subject);
 			call.then((data) => {
                             // Success!
-			    
+
 			    const log = {
 				length: body.length,
 				from: 'volunteer',

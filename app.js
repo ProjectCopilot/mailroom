@@ -29,10 +29,10 @@ app.use((req, res, next) => { // Enable CORS requests
 });
 
 // Initialize analytics tracking
-let analytics = 0/*new keen({
+let analytics = new keen({
     projectId: process.env.KEEN_PROJECTID,
     writeKey: process.env.KEEN_WRITEKEY
-});*/
+});
 
 // Initialize Firebase
 firebase.initializeApp({

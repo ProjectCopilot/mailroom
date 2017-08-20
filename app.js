@@ -1,7 +1,7 @@
 /*
-  * Project Copilot Mailroom
-  * (c) Copyright 2017 Project Copilot
-*/
+ * Project Copilot Mailroom
+ * (c) Copyright 2017 Project Copilot
+ */
 
 const app = require('express')();
 const bandname = require('bandname');
@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const communicate = require(`${__dirname}/copilot-communications/index.js`);
 const firebase = require('firebase');
 const hashid = require('hashids');
+const keen = require('keen-tracking');
 const multiparty = require('multiparty');
 const prioritize = require(`${__dirname}/copilot-prioritize/index.js`);
 
@@ -25,6 +26,12 @@ app.use((req, res, next) => { // Enable CORS requests
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
+});
+
+// Initialize analytics tracking
+let analytics = new keen({
+    projectId: process.env.KEEN_PROJECTID,
+    writeKey: process.env.KEEN_WRITEKEY
 });
 
 // Initialize Firebase
@@ -99,6 +106,16 @@ app.post('/api/addUserRequest', (req, res) => {
 			time: Date.now()
 		    };
 		    db.child('cases').child(id).child('messages').push(message);
+
+		    const log = {
+			gender: req.body.gender,
+			age: req.body.age,
+			method: req.body.contactMethod,
+			referral: req.body.referral,
+			school: req.body.school
+		    }
+		    analytics.addEvent('cases', log);
+
 		    res.status(200).end();
 		});
 	    } else {
@@ -117,6 +134,16 @@ app.post('/api/addUserRequest', (req, res) => {
 			time: Date.now()
 		    };
 		    db.child('cases').child(id).child('messages').push(message);
+
+		    const log = {
+			gender: req.body.gender,
+			age: req.body.age,
+			method: req.body.contactMethod,
+			referral: req.body.referral,
+			school:req.body.school
+		    }
+		    analytics.addEvent('cases', log);
+		    
 		    res.status(200).end();
 		});
 	    }
@@ -138,17 +165,19 @@ app.get('/api/getRequests/:number', (req, res) => {
     const numRequests = req.params.number;
 
     db.child('cases').orderByChild('time_submitted').limitToFirst(parseInt(numRequests, 10))
-      .once('value', (snapshot) => {
-        // filter out private case properties
-        let filtered = {};
-        Object.keys(snapshot.val()).forEach((k) => {
-            filtered[k] = {
-		display_name: snapshot.val()[k].display_name,
-		gender: snapshot.val()[k].gender,
-		helped: snapshot.val()[k].helped
-            };
-        });
-        res.send(filtered);
+	.once('value', (snapshot) => {
+	    let filtered = {};
+	    if (snapshot.val() != null) {
+		// filter out private case properties
+		Object.keys(snapshot.val()).forEach((k) => {
+		    filtered[k] = {
+			display_name: snapshot.val()[k].display_name,
+			gender: snapshot.val()[k].gender,
+			helped: snapshot.val()[k].helped
+		    };
+		});
+	    }
+	    res.send(filtered);
     });
 });
 
@@ -160,32 +189,51 @@ app.get('/api/getRequests/:number', (req, res) => {
 // If a new message comes from a volunteer, route that to the user
 db.child('cases').on('value', (snap) => {
     if (snap.val() != null) {
-      Object.keys(snap.val()).forEach((k) => {
-          let userCase = snap.val()[k];
-          if (userCase.messages != null) {
-            Object.keys(userCase.messages).forEach((m) => {
-              if (userCase.messages[m].sender === 'volunteer'
-                  && userCase.messages[m].sent === false) {
-                    const method = userCase.contactMethod;
-                    const contact = userCase.contact;
-                    const body = userCase.messages[m].body;
-                    const subject = 'New Message';
+	Object.keys(snap.val()).forEach((k) => {
+            let userCase = snap.val()[k];
+            if (userCase.messages != null) {
+		Object.keys(userCase.messages).forEach((m) => {
+		    const method = userCase.contactMethod;
+		    const contact = userCase.contact;
+		    const body = userCase.messages[m].body;
+		    const subject = 'New Message';
 
-                    db.child('cases').child(k).child('messages').child(m).child('sent')
-                        .set(true);
+		    if (userCase.messages[m].sender === 'volunteer'
+			&& userCase.messages[m].sent === false) {
+			
+			db.child('cases').child(k).child('messages').child(m).child('sent')
+                            .set(true);
 
-                    // Send the message
-                    const call = communicate.send(method, contact, body, subject);
-                    call.then((data) => {
-                        // Success!
-                    }).catch((e) => {
-                        // There was an error sending the message
-                        db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
-                    });
-                }
-            });
-          }
-      });
+			// Send the message
+			const call = communicate.send(method, contact, body, subject);
+			call.then((data) => {
+                            // Success!
+
+			    const log = {
+				length: body.length,
+				from: 'volunteer',
+				volunteer_id: new Buffer(userCase.helped).toString('hex'),
+				delivered: true,
+				method,
+			    };
+			    analytics.addEvent('messages', log);
+			}).catch((e) => {
+                            // There was an error sending the message
+                            db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+
+			    const log = {
+				length: body.length,
+				from: 'volunteer',
+				volunteer_id: new Buffer(userCase.helped).toString('hex'),
+				delivered: false,
+				method,
+			    };
+			    analytics.addEvent('messages', log);
+			});
+		    }	  
+		});
+            }
+	});
     }
 });
 
@@ -195,7 +243,7 @@ setInterval(() => {
 	if (snap.val() != null) {
 	    Object.keys(snap.val()).forEach((k) => {
 		if (Date.now() - snap.val()[k].last_modified > 60 * 60 * 1000)
-		    db.child('cases').child(k).child('helped').set(false);
+		    db.child('cases').child(k).child('helped').set(false);		
 	    });
 	}
     });
@@ -248,6 +296,14 @@ app.post('/communication/incoming/email', (req, res) => {
 		if (s.val()[k].contact === message.from) {
 		    db.child('cases').child(k).child('messages')
 			.push(message);
+
+		    const log = {
+			length: body.length,
+			from: 'user',
+			delivered: true,
+			method: 'Email',
+		    }
+		    analytics.addEvent('messages', log);
 		}
 	    });
 	});
@@ -273,13 +329,20 @@ app.post('/communication/incoming/sms', (req, res) => {
 	time: Date.now()
     };
 
-
     db.child('cases').once('value', (s) => {
 	Object.keys(s.val()).forEach((k) => {
 	    const match = validatePhoneNumber(s.val()[k].contact);
 	    if (match && match.join('').substr(-10) === message.from) {
 		db.child('cases').child(k).child('messages')
 		    .push(message);
+
+		const log = {
+		    length: req.body.Body,
+		    from: 'user',
+		    delivered: true,
+		    method: 'SMS',
+		}
+		analytics.addEvent('messages', log);
 	    }
 	});
     });

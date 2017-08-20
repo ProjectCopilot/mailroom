@@ -21,8 +21,8 @@ exports.send = (contact, body, subject) => {
         message.addFilter('footer','text/plain','\n\n--\n' + footerMessage);
         message.addFilter('footer','text/html','<p>--<br><i>' + footerMessage + "</i></p>");
         
-        message.addHeader({'In-Reply-To': `<${conversation_id}@support.copilot.help>`});
-        message.addHeader({'References': `<${conversation_id}@support.copilot.help>`});
+        message.addHeader({'In-Reply-To': `<${conversation_id}@copilot.help>`});
+        message.addHeader({'References': `<${conversation_id}@copilot.help>`});
 
         email.send(message, (e, json) => {
             if (e) {

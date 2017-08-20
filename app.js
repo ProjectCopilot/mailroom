@@ -337,7 +337,7 @@ app.post('/communication/incoming/sms', (req, res) => {
 		    .push(message);
 
 		const log = {
-		    length: req.body.Body,
+		    length: (req.body.Body).length,
 		    from: 'user',
 		    delivered: true,
 		    method: 'SMS',

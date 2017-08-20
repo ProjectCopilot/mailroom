@@ -29,10 +29,10 @@ app.use((req, res, next) => { // Enable CORS requests
 });
 
 // Initialize analytics tracking
-let analytics = new keen({
+let analytics = 0/*new keen({
     projectId: process.env.KEEN_PROJECTID,
     writeKey: process.env.KEEN_WRITEKEY
-});
+});*/
 
 // Initialize Firebase
 firebase.initializeApp({
@@ -208,7 +208,7 @@ db.child('cases').on('value', (snap) => {
 			const call = communicate.send(method, contact, body, subject);
 			call.then((data) => {
                             // Success!
-
+			    
 			    const log = {
 				length: body.length,
 				from: 'volunteer',
@@ -218,17 +218,20 @@ db.child('cases').on('value', (snap) => {
 			    };
 			    analytics.addEvent('messages', log);
 			}).catch((e) => {
-                            // There was an error sending the message
-                            db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+			    // Ensure that the handler is firing because of a communication failure
+			    if (e == "Error") {
+				// There was an error sending the message
+				db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
 
-			    const log = {
-				length: body.length,
-				from: 'volunteer',
-				volunteer_id: new Buffer(userCase.helped).toString('hex'),
-				delivered: false,
-				method,
-			    };
-			    analytics.addEvent('messages', log);
+				const log = {
+				    length: body.length,
+				    from: 'volunteer',
+				    volunteer_id: new Buffer(userCase.helped).toString('hex'),
+				    delivered: false,
+				    method,
+				};
+				analytics.addEvent('messages', log);
+			    }
 			});
 		    }	  
 		});

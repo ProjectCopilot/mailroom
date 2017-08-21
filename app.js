@@ -218,17 +218,20 @@ db.child('cases').on('value', (snap) => {
 			    };
 			    analytics.addEvent('messages', log);
 			}).catch((e) => {
-                            // There was an error sending the message
-                            db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
+			    // Ensure that the handler is firing because of a communication failure
+			    if (e == "Error") {
+				// There was an error sending the message
+				db.child('cases').child(k).child('messages').child(m).child('sent').set('failed');
 
-			    const log = {
-				length: body.length,
-				from: 'volunteer',
-				volunteer_id: new Buffer(userCase.helped).toString('hex'),
-				delivered: false,
-				method,
-			    };
-			    analytics.addEvent('messages', log);
+				const log = {
+				    length: body.length,
+				    from: 'volunteer',
+				    volunteer_id: new Buffer(userCase.helped).toString('hex'),
+				    delivered: false,
+				    method,
+				};
+				analytics.addEvent('messages', log);
+			    }
 			});
 		    }	  
 		});

@@ -1,5 +1,5 @@
-# Project Copilot Core Services
-Copilot backend.
+# mailroom
+Copilot core back-end. This server is responsible for routing all of our messages between users and volunteers as well as handling our database.
 
 
 ### Setup
@@ -17,16 +17,14 @@ TWILIO_AUTH_TOKEN=XXXXXXXXXXXXXXXX
 TWILIO_PHONE_NUMBER=XXXXXXXXXXX
 SENDGRID_API_KEY=XXXXXXXXXXXXXXXXXXXX
 SENDGRID_EMAIL=hello@XXXXX.XXXX
+NOW_LOGS_SECRET=XXXXXXXXX
+KEEN_PROJECTID=XXXXXXXXXXXXXXXXXXXXXXXX
+KEEN_WRITEKEY=XXXXXXXXX...XXXXXXXXXXXXX
 ```
 
-Install the npm dependencies.
+Install the dependencies.
 ```
-$ [sudo] npm install
-```
-
-Install the dependencies of for ```copilot-communications``` and ```copilot-prioritize```:
-```
-$ cd copilot-communications; [sudo] npm install; cd ../copilot-prioritize; [sudo] npm install; cd ../
+$ ./build.sh
 ```
 
 Run the server.

@@ -96,7 +96,7 @@ app.post('/api/addUserRequest', (req, res) => {
 		pendingRequest.time_submitted = new Date().getTime();
 		pendingRequest.helped = false;
 		const id = hash.encode(pendingRequest.time_submitted);
-		console.log('New case submitted with ID: '.green + (id).magenta);
+		console.log('New'.green + (req.body.referral == 'Myself' ? '' : ' referral').green + ' case submitted with ID: '.green + (id).magenta);
 		db.child('cases').child(id).set(req.body, () => {
 		    const message = {
 			from: req.body.contact,
@@ -116,6 +116,17 @@ app.post('/api/addUserRequest', (req, res) => {
 		    }
 		    analytics.addEvent('cases', log);
 
+		    // Send introductory message
+		    const introBody = req.body.referral == "Myself" ?
+			  "Thanks for reaching out. Your case has been registered with Copilot, and a volunteer will be in touch with you shortly." :
+			  "Someone who cares about you referred you to Copilot (copilot.help). A volunteer will be in touch with you shortly. If you don't want to be contacted, reply STOP.";
+		    const intro = communicate.send(req.body.contactMethod, req.body.contact, introBody, "Hello from Copilot");
+		    intro.then((data) => {
+			console.log('Sent introductory message to '.green + (id).magenta);
+		    }).catch((e) => {
+			console.log('Error sending introductory message to '.red + (id).magenta);
+		    });
+		    
 		    res.status(200).end();
 		});
 	    } else {
@@ -124,7 +135,7 @@ app.post('/api/addUserRequest', (req, res) => {
 		pendingRequest.time_submitted = new Date().getTime();
 		pendingRequest.helped = false;
 		const id = hash.encode(pendingRequest.time_submitted);
-		console.log('New case submitted with ID: '.green + (id).magenta);
+		console.log('New '.green + (req.body.referral == 'Myself' ? '' : 'referral').green + ' case submitted with ID: '.green + (id).magenta);
 		db.child('cases').child(id).set(req.body, () => {
 		    const message = {
 			from: req.body.contact,
@@ -143,6 +154,17 @@ app.post('/api/addUserRequest', (req, res) => {
 			school:req.body.school
 		    }
 		    analytics.addEvent('cases', log);
+
+		    // Send introductory message
+		    const introBody = req.body.referral == "Myself" ?
+			  "Thanks for reaching out. Your case has been registered with Copilot, and a volunteer will be in touch with you shortly." :
+			  "Someone who cares about you referred you to Copilot (copilot.help). A volunteer will be in touch with you shortly. If you don't want to be contacted, reply STOP.";
+		    const intro = communicate.send(req.body.contactMethod, req.body.contact, introBody, "Hello from Copilot");
+		    intro.then((data) => {
+			console.log('Sent introductory message to '.green + (id).magenta);
+		    }).catch((e) => {
+			console.log('Error sending introductory message to '.red + (id).magenta);
+		    });
 		    
 		    res.status(200).end();
 		});
@@ -198,6 +220,7 @@ db.child('cases').on('value', (snap) => {
 		    const body = userCase.messages[m].body;
 		    const subject = 'New Message';
 
+		    // If the message came from a volunteer has not been sent to the user
 		    if (userCase.messages[m].sender === 'volunteer'
 			&& userCase.messages[m].sent === false) {
 			
@@ -233,7 +256,7 @@ db.child('cases').on('value', (snap) => {
 				analytics.addEvent('messages', log);
 			    }
 			});
-		    }	  
+		    }
 		});
             }
 	});

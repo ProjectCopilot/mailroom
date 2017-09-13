@@ -220,6 +220,7 @@ db.child('cases').on('value', (snap) => {
 		    const body = userCase.messages[m].body;
 		    const subject = 'New Message';
 
+		    // If the message came from a volunteer has not been sent to the user
 		    if (userCase.messages[m].sender === 'volunteer'
 			&& userCase.messages[m].sent === false) {
 			
@@ -255,7 +256,18 @@ db.child('cases').on('value', (snap) => {
 				analytics.addEvent('messages', log);
 			    }
 			});
-		    }	  
+
+		    } else if (userCase.messages[m].sender === 'user'
+			       && userCase.referral != 'Myself') {
+			
+			// Listen for STOP codes from referred users
+			if ((userCase.messages[m].body).substr(0, 4) == 'STOP') { // archive the case in this scenario
+			    console.log('Referred user unsuscribed.'.cyan);
+			    db.child('archived-cases').child(k).set(userCase).then(() => {
+				db.child('cases').child(k).remove();
+			    });
+			}
+		    }
 		});
             }
 	});
